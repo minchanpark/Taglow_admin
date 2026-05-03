@@ -7,17 +7,16 @@ import '../model/admin_vote_links.dart';
 import '../service/admin_service.dart';
 import '../service/admin_service_provider.dart';
 
-final voteDetailControllerProvider = StateNotifierProvider.family<
-  VoteDetailController,
-  VoteDetailState,
-  String
->((ref, voteId) {
-  return VoteDetailController(
-    service: ref.watch(adminServiceProvider),
-    urlBuilder: ref.watch(adminUrlBuilderProvider),
-    voteId: voteId,
-  );
-});
+final voteDetailControllerProvider =
+    StateNotifierProvider.family<VoteDetailController, VoteDetailState, String>(
+      (ref, voteId) {
+        return VoteDetailController(
+          service: ref.watch(adminServiceProvider),
+          urlBuilder: ref.watch(adminUrlBuilderProvider),
+          voteId: voteId,
+        );
+      },
+    );
 
 class VoteDetailState {
   const VoteDetailState({

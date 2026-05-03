@@ -6,17 +6,18 @@ import '../service/admin_service.dart';
 import '../service/admin_service_provider.dart';
 import '../service/question_image_upload_service.dart';
 
-final questionEditorControllerProvider = StateNotifierProvider.family<
-  QuestionEditorController,
-  QuestionEditorState,
-  String
->((ref, voteId) {
-  return QuestionEditorController(
-    voteId: voteId,
-    service: ref.watch(adminServiceProvider),
-    uploadService: ref.watch(questionImageUploadServiceProvider),
-  );
-});
+final questionEditorControllerProvider =
+    StateNotifierProvider.family<
+      QuestionEditorController,
+      QuestionEditorState,
+      String
+    >((ref, voteId) {
+      return QuestionEditorController(
+        voteId: voteId,
+        service: ref.watch(adminServiceProvider),
+        uploadService: ref.watch(questionImageUploadServiceProvider),
+      );
+    });
 
 class QuestionEditorState {
   const QuestionEditorState({
@@ -128,7 +129,11 @@ class QuestionEditorController extends StateNotifier<QuestionEditorState> {
       return null;
     }
 
-    state = state.copyWith(isSaving: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      isSaving: true,
+      clearError: true,
+      clearSuccess: true,
+    );
     try {
       final image = state.image!;
       final question = await _service.createQuestion(

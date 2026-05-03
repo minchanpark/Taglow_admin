@@ -4,10 +4,11 @@ import '../model/admin_user.dart';
 import '../service/admin_service.dart';
 import '../service/admin_service_provider.dart';
 
-final authControllerProvider =
-    StateNotifierProvider<AuthController, AuthState>((ref) {
-      return AuthController(ref.watch(adminServiceProvider));
-    });
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
+  (ref) {
+    return AuthController(ref.watch(adminServiceProvider));
+  },
+);
 
 class AuthState {
   const AuthState({

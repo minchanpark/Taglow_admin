@@ -10,7 +10,8 @@ abstract class QuestionImageUploadService {
   });
 }
 
-class UnavailableQuestionImageUploadService implements QuestionImageUploadService {
+class UnavailableQuestionImageUploadService
+    implements QuestionImageUploadService {
   const UnavailableQuestionImageUploadService();
 
   @override
@@ -39,10 +40,13 @@ class MockQuestionImageUploadService implements QuestionImageUploadService {
     if (imageWidth <= 0 || imageHeight <= 0) {
       throw ArgumentError('Image dimensions must be greater than zero.');
     }
-    final safeFileName = fileName.trim().isEmpty ? 'mock-question.png' : fileName;
+    final safeFileName = fileName.trim().isEmpty
+        ? 'mock-question.png'
+        : fileName;
     return QuestionImageUploadResult(
       objectKey: 'public/question-images/$safeFileName',
-      publicUrl: 'https://cdn.taglow.local/public/question-images/$safeFileName',
+      publicUrl:
+          'https://cdn.taglow.local/public/question-images/$safeFileName',
       contentType: contentType,
       sizeBytes: bytes.length,
       imageWidth: imageWidth,

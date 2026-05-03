@@ -68,11 +68,12 @@ final adminUrlBuilderProvider = Provider<AdminUrlBuilder>((ref) {
   );
 });
 
-final questionImageUploadServiceProvider =
-    Provider<QuestionImageUploadService>((ref) {
-      const useMockService = bool.fromEnvironment('TAGLOW_USE_MOCK_SERVICE');
-      if (useMockService) {
-        return const MockQuestionImageUploadService();
-      }
-      return const UnavailableQuestionImageUploadService();
-    });
+final questionImageUploadServiceProvider = Provider<QuestionImageUploadService>(
+  (ref) {
+    const useMockService = bool.fromEnvironment('TAGLOW_USE_MOCK_SERVICE');
+    if (useMockService) {
+      return const MockQuestionImageUploadService();
+    }
+    return const UnavailableQuestionImageUploadService();
+  },
+);

@@ -12,6 +12,10 @@ void main() {
     dio.httpClientAdapter = adapter;
     final gateway = DioAdminApiGateway(dio: dio);
 
+    final signedUp = await gateway.signup(<String, Object?>{
+      'name': 'new-user',
+      'password': 'password',
+    });
     final user = await gateway.login(<String, Object?>{
       'name': 'admin',
       'password': 'password',
@@ -32,6 +36,7 @@ void main() {
     final publicQuestions = await gateway.fetchPublicQuestions('1');
 
     expect(adapter.paths, <String>[
+      '/api/users',
       '/api/auth/login',
       '/api/votes',
       '/api/public/votes',
@@ -39,6 +44,7 @@ void main() {
       '/api/public/votes/1/display',
       '/api/public/votes/1/questions',
     ]);
+    expect(signedUp['roles'], <String>['USER']);
     expect(user['userId'], 1);
     expect(votes.single['id'], 1);
     expect(createdVote['name'], '운영 테스트');
@@ -46,8 +52,8 @@ void main() {
     expect(display['voteName'], '운영 테스트');
     expect(publicQuestions.single['id'], 11);
     expect(adapter.bodies[0]['password'], 'password');
-    expect(adapter.bodies[1]['createdByUserId'], 1);
-    expect(adapter.bodies[2]['imageRatio'], 1.5);
+    expect(adapter.bodies[2]['createdByUserId'], 1);
+    expect(adapter.bodies[3]['imageRatio'], 1.5);
   });
 
   test('adds JSON content type only when a request has a body', () async {
@@ -88,6 +94,11 @@ class _AdminApiAdapter implements HttpClientAdapter {
     }
 
     final body = switch ((options.method, options.path)) {
+      ('POST', '/api/users') => <String, Object?>{
+        'id': 2,
+        'name': bodies.last['name'],
+        'roles': <String>['USER'],
+      },
       ('POST', '/api/auth/login') => <String, Object?>{
         'userId': 1,
         'name': 'admin',
