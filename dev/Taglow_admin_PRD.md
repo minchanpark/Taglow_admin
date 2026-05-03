@@ -632,7 +632,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 | 관리자 vote 생성 endpoint | `POST /api/votes` 또는 이에 준하는 ADMIN 보호 endpoint 필요 |
 | question imageRatio | DB, DTO, OpenAPI schema 모두 double/number 기준 필요 |
 | 관리자 인증 | Spring session/cookie 또는 token 방식 확정 필요 |
-| CORS | 관리자 배포 origin을 allowlist에 포함해야 함 |
+| CORS | 관리자 배포 origin과 `https://taglow-player.web.app`을 allowlist에 포함해야 함 |
 | CSRF | cookie 인증을 쓸 경우 state-changing request의 CSRF 정책 확정 필요 |
 | S3 업로드 | Cognito 직접 업로드 또는 서버 presigned URL 방식 중 하나 확정 필요 |
 | 참여자 base URL | `TAGLOW_PARTICIPANT_BASE_URL=https://taglow-acca6.web.app` 기준 |
@@ -649,6 +649,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 | player route | `https://taglow-player.web.app/display/{voteId}` 기준으로 player 프로젝트 route 구현 확인 필요 |
 | vote 생성 endpoint | 현재 OpenAPI의 `POST /api/public/votes`는 관리자 생성 API로 부적절하므로 ADMIN 보호 endpoint 확정 필요 |
 | imageRatio 타입 | 현재 OpenAPI는 integer지만 반응형 이미지 계산에는 double 필요 |
+| player CORS | runtime preflight 기준 `https://taglow-player.web.app` origin이 아직 거부되므로 서버 allowlist 추가 필요 |
 | 인증 방식 | Spring session/cookie 기본. 토큰 방식으로 바뀌면 TDD의 auth gateway에서 흡수 |
 | S3 업로드 방식 | Cognito/Amplify 직접 업로드와 서버 presigned URL 중 운영 방식 확정 필요 |
 | CloudFront | AWS 계정 검증 완료 전에는 S3 public URL fallback 허용 |

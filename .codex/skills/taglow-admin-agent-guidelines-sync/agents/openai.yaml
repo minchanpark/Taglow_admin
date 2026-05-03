@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Guidelines Sync"
+  short_description: "Sync admin AGENTS and skills"
+  default_prompt: "Use $taglow-admin-agent-guidelines-sync to update Taglow admin instructions."

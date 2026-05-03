@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Testing"
+  short_description: "Test Taglow admin Flutter flows"
+  default_prompt: "Use $taglow-admin-flutter-testing to design and run Taglow admin tests."

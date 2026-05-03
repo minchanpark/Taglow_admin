@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Stage Audit"
+  short_description: "Audit admin MVP readiness"
+  default_prompt: "Use $taglow-admin-implementation-stage-audit to assess current Taglow admin implementation status."

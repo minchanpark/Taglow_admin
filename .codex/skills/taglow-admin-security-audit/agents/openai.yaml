@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Security Audit"
+  short_description: "Audit admin auth upload security"
+  default_prompt: "Use $taglow-admin-security-audit to review Taglow admin security risks."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Debug Harness"
+  short_description: "Debug admin runtime failures"
+  default_prompt: "Use $taglow-admin-debug-harness to diagnose a Taglow admin bug with evidence."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Performance Audit"
+  short_description: "Audit admin web performance"
+  default_prompt: "Use $taglow-admin-performance-audit to inspect Taglow admin performance."

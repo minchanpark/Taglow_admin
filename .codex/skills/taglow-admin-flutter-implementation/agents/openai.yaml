@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Implementation"
+  short_description: "Build Taglow admin Flutter features"
+  default_prompt: "Use $taglow-admin-flutter-implementation to implement the next Taglow admin feature."

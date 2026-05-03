@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin API Sync"
+  short_description: "Sync admin API contracts safely"
+  default_prompt: "Use $taglow-admin-api-sync to check and update Taglow admin API integration."

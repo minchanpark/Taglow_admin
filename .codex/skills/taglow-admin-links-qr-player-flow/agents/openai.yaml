@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Links QR Player"
+  short_description: "Build links QR and player flows"
+  default_prompt: "Use $taglow-admin-links-qr-player-flow to implement operation links, QR, and player checks."

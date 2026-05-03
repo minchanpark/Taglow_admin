@@ -1,0 +1,4 @@
+interface:
+  display_name: "Taglow Admin Ops UX Review"
+  short_description: "Review admin operations UX"
+  default_prompt: "Use $taglow-admin-ops-ux-review to review the admin operator experience."
