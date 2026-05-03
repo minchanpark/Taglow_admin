@@ -4,6 +4,8 @@ import '../model/admin_vote.dart';
 import '../model/vote_status.dart';
 
 abstract class AdminService {
+  Future<AdminUser> signup({required String name, required String password});
+
   Future<AdminUser> login({required String name, required String password});
 
   Future<AdminUser?> fetchCurrentUser();

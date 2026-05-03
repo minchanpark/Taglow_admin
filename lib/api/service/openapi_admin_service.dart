@@ -19,6 +19,15 @@ class OpenApiAdminService implements AdminService {
   AdminUser? _currentUser;
 
   @override
+  Future<AdminUser> signup({
+    required String name,
+    required String password,
+  }) async {
+    final payload = _mapper.signupToPayload(name: name, password: password);
+    return _mapper.userFromPayload(await _gateway.signup(payload));
+  }
+
+  @override
   Future<AdminUser> login({
     required String name,
     required String password,

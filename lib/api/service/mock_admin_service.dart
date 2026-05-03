@@ -37,6 +37,22 @@ class MockAdminService implements AdminService {
   final Map<String, List<AdminQuestion>> _questions = {};
   int _nextVoteId = 2;
   int _nextQuestionId = 2;
+  int _nextUserId = 2;
+
+  @override
+  Future<AdminUser> signup({
+    required String name,
+    required String password,
+  }) async {
+    if (name.trim().isEmpty || password.trim().isEmpty) {
+      throw StateError('Name and password are required.');
+    }
+    return AdminUser(
+      id: (_nextUserId++).toString(),
+      name: name.trim(),
+      roles: const {'USER'},
+    );
+  }
 
   @override
   Future<AdminUser> login({

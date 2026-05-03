@@ -9,6 +9,8 @@ import 'admin_dio_adapter_stub.dart'
 /// Endpoint paths, headers, credentials, Dio/generated-client calls, and raw
 /// server payload differences should stay behind this adapter.
 abstract class AdminApiGateway {
+  Future<Map<String, Object?>> signup(Map<String, Object?> payload);
+
   Future<Map<String, Object?>> login(Map<String, Object?> payload);
   Future<Map<String, Object?>> me();
   Future<void> logout();
@@ -54,6 +56,12 @@ class DioAdminApiGateway implements AdminApiGateway {
 
   final Dio _dio;
   final String _voteCreatePath;
+
+  @override
+  Future<Map<String, Object?>> signup(Map<String, Object?> payload) async {
+    final response = await _dio.post<Object?>('/api/users', data: payload);
+    return _asPayload(response.data, 'created user');
+  }
 
   @override
   Future<Map<String, Object?>> login(Map<String, Object?> payload) async {

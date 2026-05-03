@@ -13,6 +13,13 @@ class AdminPayloadMapper {
     return {'name': name, 'password': password};
   }
 
+  Map<String, Object?> signupToPayload({
+    required String name,
+    required String password,
+  }) {
+    return {'name': name, 'password': password};
+  }
+
   AdminUser userFromPayload(Map<String, Object?> payload) {
     return AdminUser(
       id: _string(payload['id'] ?? payload['userId']),

@@ -1,8 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../utils/admin_url_builder.dart';
+import '../../utils/env_config.dart';
+import '../../utils/input_validator.dart';
 import 'admin_api_gateway.dart';
 import 'admin_payload_mapper.dart';
 import 'admin_service.dart';
 import 'mock_admin_service.dart';
 import 'openapi_admin_service.dart';
+import 'question_image_upload_service.dart';
 
 class AdminServiceProvider {
   const AdminServiceProvider({
@@ -43,3 +49,30 @@ class AdminServiceProvider {
     );
   }
 }
+
+final envConfigProvider = Provider<EnvConfig>((ref) => const EnvConfig());
+
+final adminServiceProvider = Provider<AdminService>((ref) {
+  return const AdminServiceProvider().create();
+});
+
+final inputValidatorProvider = Provider<InputValidator>((ref) {
+  return const InputValidator();
+});
+
+final adminUrlBuilderProvider = Provider<AdminUrlBuilder>((ref) {
+  final env = ref.watch(envConfigProvider);
+  return AdminUrlBuilder(
+    participantBaseUrl: env.participantBaseUrl,
+    playerBaseUrl: env.playerBaseUrl,
+  );
+});
+
+final questionImageUploadServiceProvider =
+    Provider<QuestionImageUploadService>((ref) {
+      const useMockService = bool.fromEnvironment('TAGLOW_USE_MOCK_SERVICE');
+      if (useMockService) {
+        return const MockQuestionImageUploadService();
+      }
+      return const UnavailableQuestionImageUploadService();
+    });
