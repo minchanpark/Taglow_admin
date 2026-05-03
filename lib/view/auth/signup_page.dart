@@ -111,7 +111,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                               password: _passwordController.text,
                               passwordConfirm: _confirmController.text,
                             );
-                        if (success && mounted) context.go('/login');
+                        if (!context.mounted) {
+                          return;
+                        }
+                        if (success) context.go('/login');
                       },
                     ),
                     const SizedBox(height: 14),

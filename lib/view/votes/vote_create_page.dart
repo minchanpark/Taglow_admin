@@ -73,7 +73,10 @@ class _VoteCreatePageState extends ConsumerState<VoteCreatePage> {
                     final vote = await ref
                         .read(voteListControllerProvider.notifier)
                         .createVote(_nameController.text);
-                    if (vote != null && mounted) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (vote != null) {
                       context.go('/votes/${vote.id}/questions/new');
                     }
                   },

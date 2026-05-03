@@ -139,8 +139,9 @@ class MockAdminService implements AdminService {
     required String imageUrl,
     required double imageRatio,
   }) async {
-    if (!_votes.containsKey(voteId))
+    if (!_votes.containsKey(voteId)) {
       throw StateError('Vote not found: $voteId');
+    }
     final question = AdminQuestion(
       id: (_nextQuestionId++).toString(),
       voteId: voteId,

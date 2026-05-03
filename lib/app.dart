@@ -32,11 +32,11 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: <RouteBase>[
-      GoRoute(path: '/', redirect: (_, __) => '/login'),
-      GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
-      GoRoute(path: '/signup', builder: (_, __) => const SignupPage()),
-      GoRoute(path: '/votes', builder: (_, __) => const VoteListPage()),
-      GoRoute(path: '/votes/new', builder: (_, __) => const VoteCreatePage()),
+      GoRoute(path: '/', redirect: (_, _) => '/login'),
+      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(path: '/signup', builder: (_, _) => const SignupPage()),
+      GoRoute(path: '/votes', builder: (_, _) => const VoteListPage()),
+      GoRoute(path: '/votes/new', builder: (_, _) => const VoteCreatePage()),
       GoRoute(
         path: '/votes/:voteId',
         builder: (_, state) {

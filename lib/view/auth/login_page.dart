@@ -86,7 +86,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               name: _nameController.text,
                               password: _passwordController.text,
                             );
-                        if (success && mounted) context.go('/votes');
+                        if (!context.mounted) {
+                          return;
+                        }
+                        if (success) context.go('/votes');
                       },
                     ),
                     const SizedBox(height: 14),

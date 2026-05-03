@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Taglow Admin Web (real server)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--dart-define=TAGLOW_API_BASE_URL=https://vote.newdawnsoi.site",
+        "--dart-define=TAGLOW_PARTICIPANT_BASE_URL=https://taglow-acca6.web.app",
+        "--dart-define=TAGLOW_PLAYER_BASE_URL=https://taglow-player.web.app"
+      ]
+    },
+    {
+      "name": "Taglow Admin Web (mock)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--dart-define=TAGLOW_USE_MOCK_SERVICE=true",
+        "--dart-define=TAGLOW_PARTICIPANT_BASE_URL=https://taglow-acca6.web.app",
+        "--dart-define=TAGLOW_PLAYER_BASE_URL=https://taglow-player.web.app"
+      ]
+    }
+  ]
+}

@@ -139,7 +139,10 @@ class _QuestionEditorPageState extends ConsumerState<QuestionEditorPage> {
                   isBusy: state.isSaving,
                   onPressed: () async {
                     final saved = await controller.save(resetAfterSave: false);
-                    if (saved != null && mounted) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (saved != null) {
                       context.go('/votes/${widget.voteId}');
                     }
                   },
