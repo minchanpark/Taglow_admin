@@ -8,5 +8,7 @@
 .packages
 build/
 coverage/
+.firebase/
+firebase-debug.log
 
 *.iml
