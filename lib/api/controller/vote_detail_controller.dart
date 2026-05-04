@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../utils/admin_url_builder.dart';
+import '../../utils/clipboard_helper.dart';
 import '../model/admin_question.dart';
 import '../model/admin_vote.dart';
 import '../model/admin_vote_links.dart';
 import '../service/admin_service.dart';
 import '../service/admin_service_provider.dart';
+import '../service/participant_share_service.dart';
 
 /// vote 상세 화면 상태를 제공하는 family provider입니다.
 /// View가 route의 voteId를 전달하면 Controller가 vote, questions, 운영 링크를 로드합니다.
@@ -16,6 +18,8 @@ final voteDetailControllerProvider =
         return VoteDetailController(
           service: ref.watch(adminServiceProvider),
           urlBuilder: ref.watch(adminUrlBuilderProvider),
+          clipboardHelper: ref.watch(clipboardHelperProvider),
+          participantShareService: ref.watch(participantShareServiceProvider),
           voteId: voteId,
         );
       },
@@ -103,6 +107,8 @@ class VoteDetailState {
 /// fields:
 /// - [_service]: vote와 question 조회를 수행하는 Service 계약입니다.
 /// - [_urlBuilder]: participant/player URL 정책을 보유한 utility입니다.
+/// - [_clipboardHelper]: 링크 복사 플랫폼 동작을 감싼 utility입니다.
+/// - [_participantShareService]: 참여자 링크 외부 공유를 수행하는 service입니다.
 /// - [_voteId]: 상세 조회와 링크 생성의 기준 vote 식별자입니다.
 class VoteDetailController extends StateNotifier<VoteDetailState> {
   /// vote 상세 Controller를 생성합니다.
@@ -116,9 +122,13 @@ class VoteDetailController extends StateNotifier<VoteDetailState> {
   VoteDetailController({
     required AdminService service,
     required AdminUrlBuilder urlBuilder,
+    required ClipboardHelper clipboardHelper,
+    required ParticipantShareService participantShareService,
     required String voteId,
   }) : _service = service,
        _urlBuilder = urlBuilder,
+       _clipboardHelper = clipboardHelper,
+       _participantShareService = participantShareService,
        _voteId = voteId,
        super(const VoteDetailState());
 
@@ -129,6 +139,14 @@ class VoteDetailController extends StateNotifier<VoteDetailState> {
   /// participant URL과 player URL을 생성하는 utility 의존성입니다.
   /// route 문자열과 base URL 정책을 View 밖으로 모읍니다.
   final AdminUrlBuilder _urlBuilder;
+
+  /// 시스템 클립보드 복사 helper입니다.
+  /// 링크 복사 실패는 Controller action 결과 메시지로 View에 전달합니다.
+  final ClipboardHelper _clipboardHelper;
+
+  /// 참여자 링크를 외부 공유 UI로 전달하는 service입니다.
+  /// 공유 미지원 환경에서는 Controller가 링크 복사 fallback을 제공합니다.
+  final ParticipantShareService _participantShareService;
 
   /// 현재 상세 화면의 vote 식별자입니다.
   /// Service 조회와 운영 링크 생성의 공통 입력입니다.
@@ -157,6 +175,82 @@ class VoteDetailController extends StateNotifier<VoteDetailState> {
         errorMessage: _message(error, fallback: '투표 상세를 불러오지 못했습니다.'),
       );
     }
+  }
+
+  /// 현재 vote의 참여자 링크를 시스템 클립보드에 복사합니다.
+  /// 링크가 아직 생성되지 않았거나 복사에 실패하면 사용자 표시 메시지를 반환합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 현재 Controller 상태의 링크를 사용합니다.
+  /// Returns:
+  /// - [result]: SnackBar 등에 표시할 action 결과 메시지입니다.
+  Future<String> copyParticipantLink() async {
+    final links = state.links;
+    if (links == null) {
+      return '참여자 링크를 먼저 불러와주세요.';
+    }
+
+    return _copyParticipantLink(links.participantUrl);
+  }
+
+  /// 현재 vote의 참여자 링크를 외부 공유 UI로 전달합니다.
+  /// 브라우저가 공유를 지원하지 않으면 참여자 링크 복사 fallback을 시도합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 현재 Controller 상태의 vote 이름과 참여자 링크를 사용합니다.
+  /// Returns:
+  /// - [result]: SnackBar 등에 표시할 action 결과 메시지입니다.
+  Future<String> shareParticipantLink() async {
+    final links = state.links;
+    if (links == null) {
+      return '참여자 링크를 먼저 불러와주세요.';
+    }
+
+    try {
+      await _participantShareService.shareParticipantLink(
+        title: _participantShareTitle(),
+        text: 'Taglow 참여 링크입니다.',
+        url: links.participantUrl,
+      );
+      return '외부 공유 화면을 열었습니다.';
+    } on ParticipantShareException catch (error) {
+      if (!error.shouldFallbackToCopy) {
+        return error.message;
+      }
+      final copiedMessage = await _copyParticipantLink(links.participantUrl);
+      if (copiedMessage == '참여자 링크를 복사했습니다.') {
+        return '외부 공유를 지원하지 않아 링크를 복사했습니다.';
+      }
+      return error.message;
+    } catch (_) {
+      return '외부 공유를 열지 못했습니다.';
+    }
+  }
+
+  /// 참여자 링크를 클립보드에 복사하고 결과 메시지를 반환합니다.
+  /// Parameters:
+  /// - [participantUrl]: 복사할 공개 참여자 URL입니다.
+  /// Returns:
+  /// - [result]: 복사 성공 또는 실패 메시지입니다.
+  Future<String> _copyParticipantLink(String participantUrl) async {
+    try {
+      await _clipboardHelper.copyText(participantUrl);
+      return '참여자 링크를 복사했습니다.';
+    } catch (_) {
+      return '링크 복사에 실패했습니다.';
+    }
+  }
+
+  /// 외부 공유 sheet에 전달할 제목을 구성합니다.
+  /// vote 이름이 있으면 현장 운영자가 어떤 링크인지 구분할 수 있게 포함합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 현재 Controller 상태의 vote를 사용합니다.
+  /// Returns:
+  /// - [result]: 공유 제목 문자열입니다.
+  String _participantShareTitle() {
+    final name = state.vote?.name.trim();
+    if (name == null || name.isEmpty) {
+      return 'Taglow 참여 링크';
+    }
+    return '$name 참여 링크';
   }
 
   /// 상세 조회 오류를 사용자 표시 메시지로 정규화합니다.

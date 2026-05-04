@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../api/controller/vote_detail_controller.dart';
 import '../../api/model/admin_question.dart';
+import '../../api/model/admin_vote_links.dart';
 import '../../theme/admin_theme.dart';
 import '../admin_widgets.dart';
+import 'widgets/participant_share_sheet.dart';
 
 /// 단일 vote의 question 목록과 운영 링크를 보여주는 상세 화면입니다.
 /// [VoteDetailController]가 vote/question/API 조회와 URL builder 결과를 상태로 제공합니다.
@@ -65,6 +67,7 @@ class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(voteDetailControllerProvider(widget.voteId));
     final voteName = state.vote?.name ?? '투표 상세';
+    final links = state.links;
 
     return AdminMobileShell(
       child: Column(
@@ -73,7 +76,10 @@ class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
             title: voteName,
             onBack: () => context.go('/votes'),
             trailing: IconButton(
-              onPressed: () {},
+              tooltip: '공유',
+              onPressed: links == null
+                  ? null
+                  : () => _showParticipantShareSheet(context, links),
               icon: const Icon(Icons.share_outlined),
             ),
           ),
@@ -116,14 +122,11 @@ class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
                       onAdd: () =>
                           context.go('/votes/${widget.voteId}/questions/new'),
                     ),
-                  if (state.links != null) ...<Widget>[
+                  if (links != null) ...<Widget>[
                     const SizedBox(height: 28),
-                    _LinkPanel(
-                      label: '참여자 링크',
-                      value: state.links!.participantUrl,
-                    ),
+                    _LinkPanel(label: '참여자 링크', value: links.participantUrl),
                     const SizedBox(height: 12),
-                    _LinkPanel(label: '플레이어 링크', value: state.links!.playerUrl),
+                    _LinkPanel(label: '플레이어 링크', value: links.playerUrl),
                   ],
                 ],
               ),
@@ -132,6 +135,61 @@ class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
         ],
       ),
     );
+  }
+
+  /// 참여자 QR과 링크를 공유하는 modal sheet를 엽니다.
+  /// 실제 공유/복사 동작은 Controller action으로 위임하고 결과는 SnackBar로 표시합니다.
+  /// Parameters:
+  /// - [context]: 현재 화면 context입니다.
+  /// - [links]: 공유 sheet에 표시할 운영 링크 model입니다.
+  /// Returns:
+  /// - [completion]: modal sheet가 닫힐 때 완료됩니다.
+  Future<void> _showParticipantShareSheet(
+    BuildContext context,
+    AdminVoteLinks links,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return ParticipantShareSheet(
+          links: links,
+          onExternalShare: () => _runShareSheetAction(
+            sheetContext,
+            () => ref
+                .read(voteDetailControllerProvider(widget.voteId).notifier)
+                .shareParticipantLink(),
+          ),
+          onCopyLink: () => _runShareSheetAction(
+            sheetContext,
+            () => ref
+                .read(voteDetailControllerProvider(widget.voteId).notifier)
+                .copyParticipantLink(),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 공유 sheet action을 실행하고 sheet 닫기와 feedback 표시를 처리합니다.
+  /// Parameters:
+  /// - [sheetContext]: modal sheet 내부 context입니다.
+  /// - [action]: Controller가 제공하는 공유/복사 action입니다.
+  /// Returns:
+  /// - [completion]: action과 feedback 처리 완료를 의미합니다.
+  Future<void> _runShareSheetAction(
+    BuildContext sheetContext,
+    Future<String> Function() action,
+  ) async {
+    final message = await action();
+    if (sheetContext.mounted) {
+      Navigator.of(sheetContext).maybePop();
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

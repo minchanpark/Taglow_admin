@@ -52,7 +52,7 @@ void main() {
       dio: dio,
       now: () => DateTime.utc(2026, 5, 4, 1, 2, 3),
       nonce: () => 'fixednonce',
-      debugLogsEnabled: true,
+      debugLogsEnabled: false,
     );
 
     final result = await service.uploadQuestionImage(

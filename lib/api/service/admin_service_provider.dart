@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../utils/admin_url_builder.dart';
+import '../../utils/clipboard_helper.dart';
 import '../../utils/env_config.dart';
+import '../../utils/flutter_clipboard_helper.dart';
 import '../../utils/input_validator.dart';
 import 'admin_api_gateway.dart';
 import 'admin_payload_mapper.dart';
 import 'admin_service.dart';
 import 'mock_admin_service.dart';
 import 'openapi_admin_service.dart';
+import 'participant_share_service.dart';
 import 'question_image_picker_service.dart';
 import 'question_image_upload_service.dart';
 import 's3_question_image_upload_service.dart';
@@ -123,6 +126,20 @@ final adminUrlBuilderProvider = Provider<AdminUrlBuilder>((ref) {
     participantBaseUrl: env.participantBaseUrl,
     playerBaseUrl: env.playerBaseUrl,
   );
+});
+
+/// 클립보드 복사 helper를 제공하는 Riverpod provider입니다.
+/// 링크 복사 같은 플랫폼 부수 효과를 Controller 경계 뒤에서 실행하게 합니다.
+final clipboardHelperProvider = Provider<ClipboardHelper>((ref) {
+  return const FlutterClipboardHelper();
+});
+
+/// 참여자 링크 외부 공유 service를 제공하는 Riverpod provider입니다.
+/// Web에서는 브라우저 공유 sheet를, 미지원 환경에서는 복사 fallback을 위한 실패 구현을 제공합니다.
+final participantShareServiceProvider = Provider<ParticipantShareService>((
+  ref,
+) {
+  return createParticipantShareService();
 });
 
 /// question 이미지 업로드 service를 제공하는 Riverpod provider입니다.

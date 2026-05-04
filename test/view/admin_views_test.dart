@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:taglow_admin/api/model/admin_user.dart';
 import 'package:taglow_admin/api/service/admin_service_provider.dart';
 import 'package:taglow_admin/api/service/mock_admin_service.dart';
+import 'package:taglow_admin/api/service/participant_share_service.dart';
 import 'package:taglow_admin/api/service/question_image_picker_service.dart';
 import 'package:taglow_admin/api/service/question_image_upload_service.dart';
 import 'package:taglow_admin/theme/admin_theme.dart';
+import 'package:taglow_admin/utils/clipboard_helper.dart';
 import 'package:taglow_admin/view/auth/login_page.dart';
 import 'package:taglow_admin/view/questions/question_editor_page.dart';
 import 'package:taglow_admin/view/votes/vote_detail_page.dart';
@@ -87,6 +90,38 @@ void main() {
       find.textContaining('https://taglow-player.web.app'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('vote detail share button opens QR sheet and copies the link', (
+    tester,
+  ) async {
+    final clipboard = _RecordingClipboardHelper();
+    await _pumpAdminPage(
+      tester,
+      const VoteDetailPage(voteId: '1'),
+      overrides: <Override>[
+        adminServiceProvider.overrideWithValue(MockAdminService()),
+        clipboardHelperProvider.overrideWithValue(clipboard),
+        participantShareServiceProvider.overrideWithValue(
+          _RecordingParticipantShareService(),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('공유'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('참여자 공유'), findsOneWidget);
+    expect(find.byType(QrImageView), findsOneWidget);
+    expect(find.text('외부로 공유하기'), findsOneWidget);
+    expect(find.text('링크 복사'), findsOneWidget);
+
+    await tester.tap(find.text('링크 복사'));
+    await tester.pumpAndSettle();
+
+    expect(clipboard.copiedText, 'https://taglow-acca6.web.app/e/1');
+    expect(find.text('참여자 링크를 복사했습니다.'), findsOneWidget);
   });
 
   testWidgets('question editor enables bottom buttons after image upload', (
@@ -180,5 +215,27 @@ class _UserOnlyAdminService extends MockAdminService {
   @override
   Future<void> logout() async {
     logoutCount += 1;
+  }
+}
+
+class _RecordingClipboardHelper implements ClipboardHelper {
+  String? copiedText;
+
+  @override
+  Future<void> copyText(String value) async {
+    copiedText = value;
+  }
+}
+
+class _RecordingParticipantShareService implements ParticipantShareService {
+  String? sharedUrl;
+
+  @override
+  Future<void> shareParticipantLink({
+    required String title,
+    required String text,
+    required String url,
+  }) async {
+    sharedUrl = url;
   }
 }

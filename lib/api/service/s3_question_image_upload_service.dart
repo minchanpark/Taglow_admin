@@ -183,7 +183,9 @@ class S3QuestionImageUploadService implements QuestionImageUploadService {
     try {
       response = await _dio.postUri<String>(
         _cognitoUri,
-        data: <String, Object?>{'IdentityPoolId': identityPoolId.trim()},
+        data: jsonEncode(<String, Object?>{
+          'IdentityPoolId': identityPoolId.trim(),
+        }),
         options: Options(
           headers: const <String, Object?>{
             'Content-Type': _awsJsonContentType,
@@ -225,7 +227,7 @@ class S3QuestionImageUploadService implements QuestionImageUploadService {
     try {
       response = await _dio.postUri<String>(
         _cognitoUri,
-        data: <String, Object?>{'IdentityId': identityId},
+        data: jsonEncode(<String, Object?>{'IdentityId': identityId}),
         options: Options(
           headers: const <String, Object?>{
             'Content-Type': _awsJsonContentType,

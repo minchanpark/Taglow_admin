@@ -9,9 +9,11 @@ import 'package:taglow_admin/api/model/admin_vote.dart';
 import 'package:taglow_admin/api/model/vote_status.dart';
 import 'package:taglow_admin/api/service/admin_service.dart';
 import 'package:taglow_admin/api/service/mock_admin_service.dart';
+import 'package:taglow_admin/api/service/participant_share_service.dart';
 import 'package:taglow_admin/api/service/question_image_picker_service.dart';
 import 'package:taglow_admin/api/service/question_image_upload_service.dart';
 import 'package:taglow_admin/utils/admin_url_builder.dart';
+import 'package:taglow_admin/utils/clipboard_helper.dart';
 
 void main() {
   group('AuthController', () {
@@ -122,6 +124,8 @@ void main() {
           participantBaseUrl: 'https://participant.test/',
           playerBaseUrl: 'https://player.test/',
         ),
+        clipboardHelper: _RecordingClipboardHelper(),
+        participantShareService: _RecordingParticipantShareService(),
         voteId: '1',
       );
 
@@ -138,6 +142,73 @@ void main() {
         'https://player.test/display/1',
       );
     });
+
+    test('copies the participant link through the clipboard helper', () async {
+      final clipboard = _RecordingClipboardHelper();
+      final controller = VoteDetailController(
+        service: MockAdminService(),
+        urlBuilder: const AdminUrlBuilder(
+          participantBaseUrl: 'https://participant.test/',
+          playerBaseUrl: 'https://player.test/',
+        ),
+        clipboardHelper: clipboard,
+        participantShareService: _RecordingParticipantShareService(),
+        voteId: '1',
+      );
+
+      await controller.load();
+      final message = await controller.copyParticipantLink();
+
+      expect(message, '참여자 링크를 복사했습니다.');
+      expect(clipboard.copiedText, 'https://participant.test/e/1');
+    });
+
+    test('shares the participant link through the share service', () async {
+      final shareService = _RecordingParticipantShareService();
+      final controller = VoteDetailController(
+        service: MockAdminService(),
+        urlBuilder: const AdminUrlBuilder(
+          participantBaseUrl: 'https://participant.test/',
+          playerBaseUrl: 'https://player.test/',
+        ),
+        clipboardHelper: _RecordingClipboardHelper(),
+        participantShareService: shareService,
+        voteId: '1',
+      );
+
+      await controller.load();
+      final message = await controller.shareParticipantLink();
+
+      expect(message, '외부 공유 화면을 열었습니다.');
+      expect(shareService.title, 'Mock vote 참여 링크');
+      expect(shareService.text, 'Taglow 참여 링크입니다.');
+      expect(shareService.url, 'https://participant.test/e/1');
+    });
+
+    test(
+      'copies the participant link when external sharing is unavailable',
+      () async {
+        final clipboard = _RecordingClipboardHelper();
+        final controller = VoteDetailController(
+          service: MockAdminService(),
+          urlBuilder: const AdminUrlBuilder(
+            participantBaseUrl: 'https://participant.test/',
+            playerBaseUrl: 'https://player.test/',
+          ),
+          clipboardHelper: clipboard,
+          participantShareService: _RecordingParticipantShareService(
+            exception: const ParticipantShareException('공유 미지원'),
+          ),
+          voteId: '1',
+        );
+
+        await controller.load();
+        final message = await controller.shareParticipantLink();
+
+        expect(message, '외부 공유를 지원하지 않아 링크를 복사했습니다.');
+        expect(clipboard.copiedText, 'https://participant.test/e/1');
+      },
+    );
   });
 
   group('QuestionEditorController', () {
@@ -192,6 +263,39 @@ void main() {
       expect(controller.state.successMessage, '항목이 저장되었습니다.');
     });
   });
+}
+
+class _RecordingClipboardHelper implements ClipboardHelper {
+  String? copiedText;
+
+  @override
+  Future<void> copyText(String value) async {
+    copiedText = value;
+  }
+}
+
+class _RecordingParticipantShareService implements ParticipantShareService {
+  _RecordingParticipantShareService({this.exception});
+
+  final ParticipantShareException? exception;
+  String? title;
+  String? text;
+  String? url;
+
+  @override
+  Future<void> shareParticipantLink({
+    required String title,
+    required String text,
+    required String url,
+  }) async {
+    final exception = this.exception;
+    if (exception != null) {
+      throw exception;
+    }
+    this.title = title;
+    this.text = text;
+    this.url = url;
+  }
 }
 
 class _FakeAdminService implements AdminService {
