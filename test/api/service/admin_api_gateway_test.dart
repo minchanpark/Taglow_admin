@@ -71,12 +71,88 @@ void main() {
       Headers.jsonContentType,
     );
   });
+
+  test(
+    'sends temporary public vote creation without browser credentials',
+    () async {
+      final adapter = _AdminApiAdapter();
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.taglow.test'));
+      dio.httpClientAdapter = adapter;
+      final gateway = DioAdminApiGateway(dio: dio);
+
+      await gateway.createVote(<String, Object?>{'name': '새 투표'});
+
+      expect(adapter.paths.single, '/api/public/votes');
+      expect(adapter.extras.single['withCredentials'], isFalse);
+    },
+  );
+
+  test(
+    'keeps default credentials policy for protected vote creation path',
+    () async {
+      final adapter = _AdminApiAdapter();
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.taglow.test'));
+      dio.httpClientAdapter = adapter;
+      final gateway = DioAdminApiGateway(
+        dio: dio,
+        voteCreatePath: '/api/votes',
+      );
+
+      await gateway.createVote(<String, Object?>{'name': '새 투표'});
+
+      expect(adapter.paths.single, '/api/votes');
+      expect(adapter.extras.single.containsKey('withCredentials'), isFalse);
+    },
+  );
+
+  test('treats unauthenticated session probe as signed out', () async {
+    final adapter = _AdminApiAdapter(
+      statusOverrides: const <String, int>{'GET /api/auth/me': 403},
+    );
+    final dio = Dio(BaseOptions(baseUrl: 'https://api.taglow.test'));
+    dio.httpClientAdapter = adapter;
+    final gateway = DioAdminApiGateway(dio: dio);
+
+    final user = await gateway.me();
+
+    expect(user, isNull);
+    expect(adapter.paths, <String>['/api/auth/me']);
+    expect(
+      adapter.headers.single.containsKey(Headers.contentTypeHeader),
+      false,
+    );
+  });
+
+  test('maps login 403 to a safe auth message', () async {
+    final adapter = _AdminApiAdapter(
+      statusOverrides: const <String, int>{'POST /api/auth/login': 403},
+    );
+    final dio = Dio(BaseOptions(baseUrl: 'https://api.taglow.test'));
+    dio.httpClientAdapter = adapter;
+    final gateway = DioAdminApiGateway(dio: dio);
+
+    expect(
+      () => gateway.login(<String, Object?>{
+        'name': 'admin',
+        'password': 'password',
+      }),
+      throwsA(
+        isA<AdminApiException>()
+            .having((error) => error.message, 'message', '아이디 또는 비밀번호를 확인해주세요.')
+            .having((error) => error.statusCode, 'statusCode', 403),
+      ),
+    );
+  });
 }
 
 class _AdminApiAdapter implements HttpClientAdapter {
+  _AdminApiAdapter({this.statusOverrides = const <String, int>{}});
+
+  final Map<String, int> statusOverrides;
   final List<String> paths = <String>[];
   final List<String> methods = <String>[];
   final List<Map<String, Object?>> headers = <Map<String, Object?>>[];
+  final List<Map<String, Object?>> extras = <Map<String, Object?>>[];
   final List<Map<String, Object?>> bodies = <Map<String, Object?>>[];
 
   @override
@@ -88,6 +164,7 @@ class _AdminApiAdapter implements HttpClientAdapter {
     paths.add(options.path);
     methods.add(options.method);
     headers.add(options.headers.cast<String, Object?>());
+    extras.add(options.extra.cast<String, Object?>());
     final requestBody = await _readRequestBody(requestStream);
     if (requestBody != null) {
       bodies.add(requestBody);
@@ -104,6 +181,11 @@ class _AdminApiAdapter implements HttpClientAdapter {
         'name': 'admin',
         'roles': <String>['ADMIN'],
       },
+      ('GET', '/api/auth/me') => <String, Object?>{
+        'userId': 1,
+        'name': 'admin',
+        'roles': <String>['ADMIN'],
+      },
       ('GET', '/api/votes') => <Object?>[
         <String, Object?>{
           'id': 1,
@@ -115,6 +197,11 @@ class _AdminApiAdapter implements HttpClientAdapter {
       ],
       ('POST', '/api/public/votes') => <String, Object?>{
         'id': 2,
+        'status': 'PROGRESS',
+        ...bodies.last,
+      },
+      ('POST', '/api/votes') => <String, Object?>{
+        'id': 3,
         'status': 'PROGRESS',
         ...bodies.last,
       },
@@ -142,7 +229,7 @@ class _AdminApiAdapter implements HttpClientAdapter {
 
     return ResponseBody.fromString(
       jsonEncode(body),
-      200,
+      statusOverrides['${options.method} ${options.path}'] ?? 200,
       headers: <String, List<String>>{
         Headers.contentTypeHeader: <String>[Headers.jsonContentType],
       },

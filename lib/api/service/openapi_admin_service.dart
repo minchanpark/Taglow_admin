@@ -81,7 +81,12 @@ class OpenApiAdminService implements AdminService {
   /// - [result]: 현재 인증된 [AdminUser]입니다.
   @override
   Future<AdminUser?> fetchCurrentUser() async {
-    final user = _mapper.userFromPayload(await _gateway.me());
+    final payload = await _gateway.me();
+    if (payload == null) {
+      _currentUser = null;
+      return null;
+    }
+    final user = _mapper.userFromPayload(payload);
     _currentUser = user;
     return user;
   }

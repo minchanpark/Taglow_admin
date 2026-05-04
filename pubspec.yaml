@@ -1,6 +1,6 @@
 name: taglow_admin
 description: Taglow admin operations console.
-publish_to: 'none'
+publish_to: "none"
 
 version: 0.1.0+1
 
@@ -15,6 +15,8 @@ dependencies:
   flutter_svg: ^2.2.3
   go_router: ^14.8.1
   cupertino_icons: ^1.0.9
+  crypto: ^3.0.7
+  image_picker: ^1.2.2
 
 dev_dependencies:
   flutter_lints: ^6.0.0
@@ -25,4 +27,4 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/logo/taglow_logo.svg
+    - assets/logo/taglow_logo.png

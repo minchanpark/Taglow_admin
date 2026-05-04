@@ -9,6 +9,7 @@ import 'package:taglow_admin/api/model/admin_vote.dart';
 import 'package:taglow_admin/api/model/vote_status.dart';
 import 'package:taglow_admin/api/service/admin_service.dart';
 import 'package:taglow_admin/api/service/mock_admin_service.dart';
+import 'package:taglow_admin/api/service/question_image_picker_service.dart';
 import 'package:taglow_admin/api/service/question_image_upload_service.dart';
 import 'package:taglow_admin/utils/admin_url_builder.dart';
 
@@ -31,7 +32,7 @@ void main() {
       expect(controller.state.errorMessage, isNull);
     });
 
-    test('blocks USER login and logs out the server session', () async {
+    test('allows USER login', () async {
       final service = _FakeAdminService(
         loginUser: const AdminUser(id: '2', name: 'user', roles: {'USER'}),
       );
@@ -42,10 +43,28 @@ void main() {
         password: 'password123',
       );
 
+      expect(success, isTrue);
+      expect(service.logoutCount, 0);
+      expect(controller.state.user?.name, 'user');
+      expect(controller.state.canManage, isTrue);
+      expect(controller.state.errorMessage, isNull);
+    });
+
+    test('blocks unsupported roles', () async {
+      final service = _FakeAdminService(
+        loginUser: const AdminUser(id: '3', name: 'guest', roles: {}),
+      );
+      final controller = AuthController(service);
+
+      final success = await controller.login(
+        name: 'guest',
+        password: 'password123',
+      );
+
       expect(success, isFalse);
-      expect(service.logoutCount, 1);
+      expect(service.logoutCount, 0);
       expect(controller.state.user, isNull);
-      expect(controller.state.errorMessage, '관리자 권한이 필요합니다.');
+      expect(controller.state.errorMessage, '운영 콘솔 접근 권한이 없습니다.');
     });
 
     test(
@@ -71,7 +90,7 @@ void main() {
         expect(controller.state.user, isNull);
         expect(
           controller.state.successMessage,
-          '회원가입이 완료되었습니다. 최고 관리자 승인 후 관리자 기능을 사용할 수 있습니다.',
+          '회원가입이 완료되었습니다. 로그인 후 운영 콘솔을 사용할 수 있습니다.',
         );
       },
     );
@@ -126,6 +145,7 @@ void main() {
       final controller = QuestionEditorController(
         voteId: '1',
         service: MockAdminService(),
+        imagePicker: const MockQuestionImagePickerService(),
         uploadService: const MockQuestionImageUploadService(),
       );
 
@@ -139,6 +159,7 @@ void main() {
       final controller = QuestionEditorController(
         voteId: '1',
         service: MockAdminService(),
+        imagePicker: const MockQuestionImagePickerService(),
         uploadService: const MockQuestionImageUploadService(),
       );
 
@@ -157,6 +178,7 @@ void main() {
       final controller = QuestionEditorController(
         voteId: '1',
         service: MockAdminService(),
+        imagePicker: const MockQuestionImagePickerService(),
         uploadService: const MockQuestionImageUploadService(),
       );
 

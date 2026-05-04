@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../api/controller/question_editor_controller.dart';
+import '../../api/model/question_image_upload_result.dart';
 import '../../theme/admin_theme.dart';
 import '../admin_widgets.dart';
 
@@ -136,7 +137,7 @@ class _QuestionEditorPageState extends ConsumerState<QuestionEditorPage> {
                         ),
                         const SizedBox(height: 32),
                         _PosterUploadButton(
-                          hasImage: state.image != null,
+                          image: state.image,
                           isUploading: state.isUploading,
                           onTap: controller.uploadImage,
                         ),
@@ -200,27 +201,27 @@ class _QuestionEditorPageState extends ConsumerState<QuestionEditorPage> {
 /// question poster image upload action을 표시하는 private widget입니다.
 /// View는 업로드 상태와 prepared 상태만 넘기고 실제 upload는 Controller callback으로 수행합니다.
 /// fields:
-/// - [hasImage]: 업로드 결과가 준비되었는지 나타냅니다.
+/// - [image]: 업로드 결과가 준비되었을 때 표시할 이미지 정보입니다.
 /// - [isUploading]: 업로드 진행 중인지 나타냅니다.
 /// - [onTap]: 업로드 시작 action callback입니다.
 class _PosterUploadButton extends StatelessWidget {
   /// poster upload button widget을 생성합니다.
   /// Controller state에 따라 check icon, upload icon, loading indicator를 전환합니다.
   /// Parameters:
-  /// - [hasImage]: 이미지 준비 여부입니다.
+  /// - [image]: 업로드된 이미지 결과입니다.
   /// - [isUploading]: 업로드 진행 여부입니다.
   /// - [onTap]: tap callback입니다.
   /// Returns:
   /// - [instance]: poster upload button widget 인스턴스입니다.
   const _PosterUploadButton({
-    required this.hasImage,
+    required this.image,
     required this.isUploading,
     required this.onTap,
   });
 
   /// 이미지 업로드 결과가 준비되었는지 나타냅니다.
-  /// true이면 check icon과 완료 메시지를 표시합니다.
-  final bool hasImage;
+  /// null이 아니면 preview와 원본 이미지 비율을 표시합니다.
+  final QuestionImageUploadResult? image;
 
   /// 이미지 업로드가 진행 중인지 나타냅니다.
   /// true이면 tap을 막고 loading indicator를 표시합니다.
@@ -238,6 +239,8 @@ class _PosterUploadButton extends StatelessWidget {
   /// - [result]: poster upload widget tree입니다.
   @override
   Widget build(BuildContext context) {
+    final uploadedImage = image;
+    final hasImage = uploadedImage != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -268,6 +271,8 @@ class _PosterUploadButton extends StatelessWidget {
             child: Center(
               child: isUploading
                   ? const CircularProgressIndicator()
+                  : hasImage
+                  ? _UploadedPosterPreview(image: uploadedImage)
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
@@ -285,17 +290,15 @@ class _PosterUploadButton extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: Icon(
-                            hasImage
-                                ? Icons.check_rounded
-                                : Icons.add_photo_alternate_outlined,
+                          child: const Icon(
+                            Icons.add_photo_alternate_outlined,
                             color: AdminColors.muted,
                           ),
                         ),
                         const SizedBox(height: 14),
-                        Text(
-                          hasImage ? '이미지가 준비되었습니다' : '이미지를 업로드하려면 탭하세요',
-                          style: const TextStyle(
+                        const Text(
+                          '이미지를 업로드하려면 탭하세요',
+                          style: TextStyle(
                             color: AdminColors.textMuted,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
@@ -304,6 +307,103 @@ class _PosterUploadButton extends StatelessWidget {
                       ],
                     ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 업로드된 question poster preview와 ratio 정보를 표시하는 widget입니다.
+/// 네트워크 이미지 로딩 실패 시에도 저장된 URL/ratio 상태가 사라지지 않도록 fallback을 렌더링합니다.
+/// fields:
+/// - [image]: 업로드된 이미지 결과입니다.
+class _UploadedPosterPreview extends StatelessWidget {
+  /// 업로드 완료 preview widget을 생성합니다.
+  /// Parameters:
+  /// - [image]: 업로드된 이미지 결과입니다.
+  /// Returns:
+  /// - [instance]: 업로드 완료 preview widget입니다.
+  const _UploadedPosterPreview({required this.image});
+
+  /// 업로드된 이미지 결과입니다.
+  final QuestionImageUploadResult image;
+
+  /// preview와 비율 badge를 빌드합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: preview widget tree입니다.
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image.network(
+            image.publicUrl,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(child: _UploadReadyMessage());
+            },
+          ),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              color: Color(0xCCFFFFFF),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(14)),
+            ),
+            child: Text(
+              '이미지가 준비되었습니다 · 비율 ${image.imageRatio.toStringAsFixed(2)}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AdminColors.textMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 이미지 URL preview가 실패했을 때 보여주는 업로드 완료 fallback입니다.
+/// 업로드는 성공했지만 public read나 테스트 HTTP client가 이미지를 읽지 못하는 상황을 구분합니다.
+/// fields:
+/// - [none]: 저장 필드가 없으며, 연결 관계는 생성/호출 위치에서 결정됩니다.
+class _UploadReadyMessage extends StatelessWidget {
+  /// 업로드 완료 fallback widget을 생성합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [instance]: 업로드 완료 fallback widget입니다.
+  const _UploadReadyMessage();
+
+  /// 업로드 완료 fallback UI를 빌드합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: fallback widget tree입니다.
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(Icons.check_rounded, color: AdminColors.muted, size: 32),
+        SizedBox(height: 10),
+        Text(
+          '이미지가 준비되었습니다',
+          style: TextStyle(
+            color: AdminColors.textMuted,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],

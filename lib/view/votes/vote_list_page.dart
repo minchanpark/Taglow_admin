@@ -13,7 +13,7 @@ import '../admin_widgets.dart';
 /// - [none]: 저장 필드가 없으며, 연결 관계는 생성/호출 위치에서 결정됩니다.
 class VoteListPage extends ConsumerStatefulWidget {
   /// vote 목록 화면 widget을 생성합니다.
-  /// router가 인증된 ADMIN 사용자를 `/votes`로 보낼 때 렌더링됩니다.
+  /// router가 인증된 운영자를 `/votes`로 보낼 때 렌더링됩니다.
   /// Parameters:
   /// - [key]: Flutter widget 식별 key입니다.
   /// Returns:
@@ -63,9 +63,8 @@ class _VoteListPageState extends ConsumerState<VoteListPage> {
       child: Column(
         children: <Widget>[
           Container(
-            height: 140,
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+            padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
             decoration: const BoxDecoration(
               color: AdminColors.surface,
               border: Border(bottom: BorderSide(color: AdminColors.softLine)),
@@ -80,6 +79,12 @@ class _VoteListPageState extends ConsumerState<VoteListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                Container(
+                  height: 30,
+                  color: AdminColors.surface,
+                  child: Image.asset("assets/logo/taglow_logo.png"),
+                ),
+                SizedBox(height: 10),
                 const Text(
                   '투표 관리',
                   style: TextStyle(

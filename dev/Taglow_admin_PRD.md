@@ -10,7 +10,7 @@
 이 PRD는 **관리자용 서비스**만 다룬다.
 
 포함 범위:
-- Spring ADMIN 로그인
+- Spring 로그인
 - 관리자 회원가입 요청. 서버는 신규 사용자를 `USER` role로 자동 생성한다.
 - vote 생성, 조회, 수정, 상태 변경, 삭제
 - question 생성, 조회, 수정, 삭제
@@ -54,7 +54,7 @@
 **Taglow 관리자 서비스**
 
 ### 1-2. 한 줄 정의
-운영자가 Spring ADMIN 계정으로 로그인해 vote와 question을 만들고, 질문 이미지를 S3에 업로드한 뒤, 참여자 링크·QR 코드·스탠바이미 player 링크를 발급하는 Flutter Web 관리자 도구.
+운영자가 Spring 계정으로 로그인해 vote와 question을 만들고, 질문 이미지를 S3에 업로드한 뒤, 참여자 링크·QR 코드·스탠바이미 player 링크를 발급하는 Flutter Web 관리자 도구. `USER`와 `ADMIN` role 모두 운영 콘솔에 진입할 수 있으며, `ADMIN`은 최고 관리자/개발자 권한 구분으로 사용한다.
 
 ### 1-3. 핵심 가치
 - 운영자는 개발자 도움 없이 vote와 question을 만들 수 있다.
@@ -109,10 +109,10 @@
 ## 3. 목표와 비목표
 
 ### 3-1. 목표
-1. ADMIN 사용자가 로그인 후 vote를 생성할 수 있다.
-2. ADMIN 사용자가 vote 이름과 상태를 수정할 수 있다.
-3. ADMIN 사용자가 vote 안에 question을 생성할 수 있다.
-4. ADMIN 사용자가 question 이미지를 S3에 직접 업로드할 수 있다.
+1. USER 또는 ADMIN 사용자가 로그인 후 vote를 생성할 수 있다.
+2. USER 또는 ADMIN 사용자가 vote 이름과 상태를 수정할 수 있다.
+3. USER 또는 ADMIN 사용자가 vote 안에 question을 생성할 수 있다.
+4. USER 또는 ADMIN 사용자가 question 이미지를 S3에 직접 업로드할 수 있다.
 5. question 저장 시 서버에는 이미지 bytes가 아니라 `imageUrl`과 `imageRatio`만 전달한다.
 6. 저장된 vote/question은 참여자 공개 API와 스탠바이미 display API에서 읽혀야 한다.
 7. 관리자 화면에서 참여자 URL `https://taglow-acca6.web.app/e/{voteId}`를 생성하고 복사할 수 있다.
@@ -122,7 +122,7 @@
 11. Flutter View/Controller는 서버 API DTO를 직접 알지 않고 안정적인 domain model만 사용한다.
 12. 로그인, vote 관리, question 관리, 공개 API 미리보기는 모두 `View -> Controller -> Service -> Gateway/Mapper` 계층을 통해 수행한다.
 13. question 이미지 업로드는 Controller가 storage SDK를 직접 쓰지 않고 `QuestionImageUploadService`를 통해 수행한다.
-14. 회원가입 사용자는 서버 기본 정책에 따라 `USER`로 생성되며, 관리자 화면은 `ADMIN` role이 있는 기존 최고 관리자 계정만 진입시킨다.
+14. 회원가입 사용자는 서버 기본 정책에 따라 `USER`로 생성되며, 관리자 화면은 `USER` 또는 `ADMIN` role이 있는 계정을 진입시킨다.
 
 ### 3-2. 비목표
 1. 태그 승인/숨김/moderation은 MVP 범위에서 제외한다.
@@ -143,15 +143,15 @@
 2. 로그인 화면에서 계정명과 비밀번호를 입력한다.
 3. Spring `POST /api/auth/login`으로 인증한다.
 4. `GET /api/auth/me` 또는 `GET /api/users/me`로 현재 사용자와 role을 확인한다.
-5. `ADMIN` role이 있으면 관리자 홈으로 이동한다.
-6. `USER`만 있거나 `ADMIN` role이 없으면 “관리자 권한이 필요합니다.” 메시지를 표시하고 로그인 화면에 머문다.
+5. `USER` 또는 `ADMIN` role이 있으면 관리자 홈으로 이동한다.
+6. 지원하지 않는 role이거나 role 정보가 없으면 “운영 콘솔 접근 권한이 없습니다.” 메시지를 표시하고 로그인 화면에 머문다.
 
 ## 4-1-1. 회원가입 플로우
 1. 사용자가 로그인 화면에서 회원가입으로 이동한다.
 2. 계정명, 비밀번호, 비밀번호 확인을 입력한다.
 3. 비밀번호는 Swagger 기준 최소 8자를 검증한다.
 4. Spring `POST /api/users`로 회원가입을 요청한다.
-5. 성공 시 “회원가입이 완료되었습니다. 최고 관리자 승인 후 관리자 기능을 사용할 수 있습니다.” 메시지와 함께 로그인 화면으로 돌아간다.
+5. 성공 시 “회원가입이 완료되었습니다. 로그인 후 운영 콘솔을 사용할 수 있습니다.” 메시지와 함께 로그인 화면으로 돌아간다.
 6. 클라이언트는 회원가입 직후 `ADMIN` role 부여 또는 권한 승격 API를 호출하지 않는다.
 
 ## 4-2. vote 생성 플로우
@@ -265,7 +265,7 @@ Model
 # A1. 로그인 화면
 
 ## 화면 목적
-ADMIN 사용자만 관리자 기능에 접근하게 한다.
+USER 또는 ADMIN 사용자만 관리자 기능에 접근하게 한다.
 
 ## 주요 UI
 - 계정명 입력
@@ -276,20 +276,20 @@ ADMIN 사용자만 관리자 기능에 접근하게 한다.
 
 ## 기능 요구사항
 - 로그인 성공 시 현재 사용자 role을 확인한다.
-- `ADMIN` role이 없으면 관리자 홈에 진입하지 않는다.
-- 회원가입 직후 `USER` 계정은 관리자 기능에 자동 진입하지 않는다.
+- `USER` 또는 `ADMIN` role이 있으면 관리자 홈에 진입한다.
+- 회원가입 직후에는 자동 진입하지 않고 로그인 화면에서 다시 인증한다.
 - 로그인 중 중복 제출을 막는다.
 - 비밀번호는 저장하지 않는다.
 
 ## 성공 기준
-- 정상 ADMIN 계정은 vote 목록으로 이동한다.
-- `USER` 계정은 “관리자 권한이 필요합니다.” 메시지를 본다.
+- 정상 USER 또는 ADMIN 계정은 vote 목록으로 이동한다.
+- 지원하지 않는 role의 계정은 “운영 콘솔 접근 권한이 없습니다.” 메시지를 본다.
 - 실패 시 사용자에게 다시 시도할 수 있는 메시지가 표시된다.
 
 # A1-1. 회원가입 화면
 
 ## 화면 목적
-서버에 일반 `USER` 계정을 생성하고, 최고 관리자 승인 전에는 관리자 기능 진입을 막는다.
+서버에 일반 `USER` 계정을 생성하고, 로그인 후 운영 콘솔에 진입할 수 있게 한다.
 
 ## 주요 UI
 - 계정명 입력
@@ -590,11 +590,11 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 - 관리자 서비스는 로그인 없이 접근할 수 없다.
 - 최고 관리자 계정은 서버에 이미 존재한다고 가정한다.
 - 회원가입 사용자는 서버에서 자동으로 `USER` role을 부여받는다.
-- ADMIN role이 없는 사용자는 vote/question 관리 화면에 접근할 수 없다.
+- USER와 ADMIN role 사용자는 vote/question 관리 화면에 접근할 수 있다.
 - Spring session/cookie 인증을 기본으로 한다.
 - 클라이언트는 서버 secret, AWS access key, 관리자 비밀번호를 저장하지 않는다.
 - 클라이언트는 사용자 role을 `ADMIN`으로 바꾸는 UI/API 호출을 제공하지 않는다.
-- 클라이언트 route guard는 UX 보호 수단이며, 서버 API는 반드시 ADMIN 권한을 검증해야 한다.
+- 클라이언트 route guard는 UX 보호 수단이며, 서버 API는 반드시 로그인 및 필요한 role 권한을 검증해야 한다.
 
 ### 10-2. S3 보안
 - Flutter에는 장기 AWS access key를 넣지 않는다.
@@ -618,7 +618,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 ## 11. 검증 및 QA 시나리오
 
 ### 11-1. 기본 생성 시나리오
-1. ADMIN 사용자가 로그인한다.
+1. USER 또는 ADMIN 사용자가 로그인한다.
 2. vote 목록 화면에 진입한다.
 3. 새 vote를 생성한다.
 4. vote 상세 화면에서 question 추가를 누른다.
@@ -652,8 +652,8 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 
 ### 11-5. 실패 시나리오
 - 로그인 실패 시 vote 목록에 접근하지 못한다.
-- ADMIN role이 없으면 접근 불가 상태가 표시된다.
-- 회원가입 성공 직후에도 `ADMIN` role이 없으면 관리자 화면에 진입하지 못한다.
+- USER 또는 ADMIN role이 없으면 접근 불가 상태가 표시된다.
+- 회원가입 성공 직후에는 로그인 화면에서 다시 인증해야 한다.
 - S3 업로드 실패 시 question 저장은 실행되지 않는다.
 - S3 업로드 성공 후 서버 저장 실패 시 재시도할 수 있다.
 - `imageUrl` 또는 `imageRatio`가 없으면 question 저장을 막는다.
@@ -668,7 +668,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 
 | 항목 | 필수 조건 |
 |---|---|
-| 관리자 vote 생성 endpoint | `POST /api/votes` 또는 이에 준하는 ADMIN 보호 endpoint 필요 |
+| 관리자 vote 생성 endpoint | `POST /api/votes` 또는 이에 준하는 로그인 사용자 보호 endpoint 필요 |
 | question imageRatio | DB, DTO, OpenAPI schema 모두 double/number 기준 필요 |
 | 관리자 인증 | Spring session/cookie 또는 token 방식 확정 필요 |
 | CORS | 관리자 배포 origin과 `https://taglow-player.web.app`을 allowlist에 포함해야 함 |
@@ -686,7 +686,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 |---|---|
 | 관리자 배포 도메인 | Firebase Hosting을 쓸지 AWS Hosting을 쓸지 확정 필요 |
 | player route | `https://taglow-player.web.app/display/{voteId}` 기준으로 player 프로젝트 route 구현 확인 필요 |
-| vote 생성 endpoint | 현재 OpenAPI의 `POST /api/public/votes`는 관리자 생성 API로 부적절하므로 ADMIN 보호 endpoint 확정 필요 |
+| vote 생성 endpoint | 현재 OpenAPI의 `POST /api/public/votes`는 관리자 생성 API로 부적절하므로 로그인 사용자 보호 endpoint 확정 필요 |
 | imageRatio 타입 | 현재 OpenAPI는 integer지만 반응형 이미지 계산에는 double 필요 |
 | player CORS | runtime preflight 기준 `https://taglow-player.web.app` origin이 아직 거부되므로 서버 allowlist 추가 필요 |
 | 인증 방식 | Spring session/cookie 기본. 토큰 방식으로 바뀌면 TDD의 auth gateway에서 흡수 |
@@ -702,7 +702,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 Taglow 관리자 서비스는 운영자가 vote와 question을 직접 준비하고, 현장 운영에 필요한 링크와 QR까지 한 번에 발급할 수 있게 하는 별도 Flutter Web 서비스다.
 
 최종 기준:
-1. ADMIN 사용자만 접근할 수 있어야 한다.
+1. USER 또는 ADMIN 사용자만 접근할 수 있어야 한다.
 2. vote와 question 생성/수정/삭제가 가능해야 한다.
 3. question 이미지는 S3에 직접 업로드되어야 한다.
 4. 서버에는 이미지 bytes가 아니라 URL과 비율만 저장해야 한다.

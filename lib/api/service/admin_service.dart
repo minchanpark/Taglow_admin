@@ -18,7 +18,7 @@ abstract class AdminService {
   Future<AdminUser> signup({required String name, required String password});
 
   /// 사용자 인증을 요청하고 인증된 사용자를 반환합니다.
-  /// ADMIN role 확인은 [AuthController]가 domain model 기준으로 수행합니다.
+  /// 콘솔 접근 role 확인은 [AuthController]가 domain model 기준으로 수행합니다.
   /// Parameters:
   /// - [name]: 로그인 사용자 이름 또는 아이디입니다.
   /// - [password]: 로그인 비밀번호이며 Service 밖 상태에 저장하지 않습니다.

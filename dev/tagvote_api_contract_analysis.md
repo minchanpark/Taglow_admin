@@ -15,6 +15,7 @@
 - Base server root `/` returns `403` and sets `JSESSIONID`.
 - Auth uses session/cookie style; login response schema is `AuthUserResponse`.
 - Unauthenticated protected endpoints such as `/api/auth/me`, `/api/users/me`, `/api/votes`, and `/api/users` return `403`.
+- `/api/public/votes` accepts admin origin preflight but does not include `Access-Control-Allow-Credentials: true`, so Flutter must not send browser credentials while this temporary public create path is used.
 - Public display/questions endpoints work for known vote IDs `1` and `2`.
 - Runtime public display shape:
   - `voteId`
@@ -29,7 +30,7 @@
 |---|---|---|---|
 | logout success | `204 No Content` | Swagger says `200` | Gateway must accept body-less 2xx responses. |
 | vote create response | `201 Created` | Swagger says `200` | Client should not depend on status text. |
-| vote create path | `POST /api/public/votes` documented as public | No protected `POST /api/votes` exists | Admin app keeps path configurable and treats public creation as temporary server gap. |
+| vote create path | `POST /api/public/votes` documented as public | Protected `POST /api/votes` still needs confirmation | Admin app keeps path configurable and sends the temporary public request without browser credentials. |
 | `createdByUserId` | documented required | Swagger requires only `name` | Service sends current user id when known. |
 | question create response | implied created | Swagger says `200` | Client should parse response body only. |
 | `imageRatio` | `number` | Swagger says `integer int64` | Mapper parses both; backend schema should become double. |
@@ -41,11 +42,12 @@
 - Parse `id` and `userId` aliases for auth user payloads.
 - Parse `id` and `voteId`, `name` and `voteName`, `detail` and `description` aliases in mapper.
 - Keep `DioAdminApiGateway.voteCreatePath` configurable. Current default matches Swagger: `/api/public/votes`.
+- Override browser `withCredentials` to `false` only for the temporary `/api/public/votes` create request because that CORS response is non-credentialed.
 - Keep View/Controller isolated from raw JSON, generated DTOs, Dio, cookies, and S3/presigned upload details.
 
 ## Required Backend Follow-Up
 
-1. Add protected ADMIN vote creation endpoint, preferably `POST /api/votes`.
+1. Add protected logged-in-user vote creation endpoint, preferably `POST /api/votes`.
 2. Change `QuestionCreateRequest`, `QuestionUpdateRequest`, and `QuestionResponse.imageRatio` to `number/double`.
 3. Add `https://taglow-player.web.app` to CORS allowlist for public display/questions/events APIs.
 4. Confirm admin deployment origin and add it to CORS allowlist.

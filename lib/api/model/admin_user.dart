@@ -1,9 +1,9 @@
 /// 관리자 인증 결과로 사용하는 사용자 domain model입니다.
-/// Auth Controller와 라우터가 generated DTO 없이 ADMIN role을 판단하게 합니다.
+/// Auth Controller와 라우터가 generated DTO 없이 콘솔 접근 가능 여부를 판단하게 합니다.
 /// fields:
 /// - [id]: 서버 사용자 식별자이며 vote 생성자의 연결값으로 전달될 수 있습니다.
 /// - [name]: 관리자 화면에서 식별 가능한 사용자 이름입니다.
-/// - [roles]: 서버가 부여한 role 집합이며 [isAdmin]이 접근 가능 여부를 계산합니다.
+/// - [roles]: 서버가 부여한 role 집합이며 [canUseAdminConsole]이 접근 가능 여부를 계산합니다.
 class AdminUser {
   /// 사용자 인증 정보를 불변 값으로 생성합니다.
   /// Mapper와 mock service가 auth 결과를 Controller에 넘길 때 사용합니다.
@@ -28,10 +28,18 @@ class AdminUser {
   final Set<String> roles;
 
   /// 사용자가 ADMIN role을 갖는지 계산합니다.
-  /// Auth Controller와 라우터 보호 로직이 같은 기준을 공유합니다.
+  /// ADMIN은 최고 관리자나 개발자 권한 구분에만 사용하고 일반 운영 접근 차단 기준으로 쓰지 않습니다.
   /// Parameters:
   /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
   /// Returns:
   /// - [result]: ADMIN 권한 보유 여부입니다.
   bool get isAdmin => roles.contains('ADMIN');
+
+  /// 사용자가 운영 콘솔에 접근할 수 있는 role을 갖는지 계산합니다.
+  /// USER와 ADMIN 모두 vote/question 운영 화면에 진입할 수 있습니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [result]: 운영 콘솔 접근 가능 여부입니다.
+  bool get canUseAdminConsole => roles.contains('USER') || isAdmin;
 }

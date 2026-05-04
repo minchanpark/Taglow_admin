@@ -12,7 +12,7 @@ import 'view/votes/vote_detail_page.dart';
 import 'view/votes/vote_list_page.dart';
 
 /// 관리자 앱의 route graph와 auth redirect 정책을 제공하는 provider입니다.
-/// [AuthController] 상태를 읽어 ADMIN 권한이 없는 사용자를 로그인 화면으로 돌려보냅니다.
+/// [AuthController] 상태를 읽어 인증되지 않았거나 콘솔 접근 role이 없는 사용자를 로그인 화면으로 돌려보냅니다.
 /// View는 route parameter만 받고 API endpoint나 Service wiring을 알지 않습니다.
 final adminRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);

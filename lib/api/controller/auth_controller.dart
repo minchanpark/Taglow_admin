@@ -6,7 +6,7 @@ import '../service/admin_service_provider.dart';
 
 /// 인증 상태를 제공하는 Riverpod provider입니다.
 /// View와 router가 [AuthState]를 구독하고, 실제 auth 동작은 [AdminService]를 통해 수행됩니다.
-/// ADMIN role 확인은 Controller에 모아 UI가 서버 payload나 auth endpoint를 알지 않게 합니다.
+/// 콘솔 접근 role 확인은 Controller에 모아 UI가 서버 payload나 auth endpoint를 알지 않게 합니다.
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) {
     return AuthController(ref.watch(adminServiceProvider));
@@ -16,7 +16,7 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 /// 관리자 로그인, 세션 확인, 가입 흐름의 UI 상태입니다.
 /// Login/Signup View와 router guard가 이 상태만 읽고 auth Service 세부 구현은 알지 않습니다.
 /// fields:
-/// - [user]: 현재 인증된 관리자 후보 사용자이며 ADMIN 여부는 [canManage]로 계산됩니다.
+/// - [user]: 현재 인증된 운영자 후보 사용자이며 콘솔 접근 여부는 [canManage]로 계산됩니다.
 /// - [isCheckingSession]: 앱 시작 시 기존 세션 확인 중인지 나타냅니다.
 /// - [isSubmitting]: 로그인, 회원가입, 로그아웃 요청이 진행 중인지 나타냅니다.
 /// - [errorMessage]: View에 표시할 인증 실패 또는 권한 오류 메시지입니다.
@@ -41,7 +41,7 @@ class AuthState {
   });
 
   /// 현재 인증된 사용자입니다.
-  /// ADMIN role이 없으면 Controller가 null로 정리해 관리자 진입을 막습니다.
+  /// 콘솔 접근 role이 없으면 Controller가 null로 정리해 관리자 진입을 막습니다.
   final AdminUser? user;
 
   /// 기존 Spring session이나 token 세션을 확인 중인지 나타냅니다.
@@ -69,12 +69,12 @@ class AuthState {
   bool get isAuthenticated => user != null;
 
   /// 현재 사용자가 관리자 기능에 진입할 수 있는지 계산합니다.
-  /// ADMIN role 판정은 [AdminUser.isAdmin] 기준과 동일합니다.
+  /// USER와 ADMIN role 모두 운영 콘솔 접근을 허용합니다.
   /// Parameters:
   /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
   /// Returns:
   /// - [result]: 관리자 route 접근 가능 여부입니다.
-  bool get canManage => user?.isAdmin ?? false;
+  bool get canManage => user?.canUseAdminConsole ?? false;
 
   /// 일부 인증 상태만 교체한 새 [AuthState]를 만듭니다.
   /// Controller가 로딩, 오류, 성공 메시지를 명시적으로 지우며 상태를 갱신할 때 사용합니다.
@@ -113,7 +113,7 @@ class AuthState {
 
 /// 인증 관련 사용자 이벤트를 처리하는 Controller입니다.
 /// Auth View는 이 객체의 메서드만 호출하고 실제 API 호출은 [AdminService] 경계 뒤에 둡니다.
-/// ADMIN role이 없으면 즉시 세션을 정리해 관리자 화면 진입을 막습니다.
+/// 콘솔 접근 role이 없으면 즉시 세션을 정리해 관리자 화면 진입을 막습니다.
 /// fields:
 /// - [_service]: auth, signup, session, logout API 흐름을 감싼 Service 계약입니다.
 class AuthController extends StateNotifier<AuthState> {
@@ -129,8 +129,8 @@ class AuthController extends StateNotifier<AuthState> {
   /// Controller가 endpoint나 generated client를 직접 알지 않게 합니다.
   final AdminService _service;
 
-  /// 앱 시작 시 현재 인증 세션과 ADMIN 권한을 확인합니다.
-  /// 성공한 ADMIN 사용자만 상태에 보관하고 실패나 USER 권한은 비로그인처럼 정리합니다.
+  /// 앱 시작 시 현재 인증 세션과 콘솔 접근 권한을 확인합니다.
+  /// USER 또는 ADMIN role이 있는 사용자만 상태에 보관하고 나머지는 비로그인처럼 정리합니다.
   /// Parameters:
   /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
   /// Returns:
@@ -144,8 +144,8 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _service.fetchCurrentUser();
       state = state.copyWith(
-        user: user != null && user.isAdmin ? user : null,
-        clearUser: user == null || !user.isAdmin,
+        user: user != null && user.canUseAdminConsole ? user : null,
+        clearUser: user == null || !user.canUseAdminConsole,
         isCheckingSession: false,
       );
     } catch (_) {
@@ -154,12 +154,12 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   /// 로그인 form 값을 검증한 뒤 인증 Service에 로그인 요청을 보냅니다.
-  /// ADMIN role이 없으면 조용히 logout하고 View에 권한 오류를 표시합니다.
+  /// USER 또는 ADMIN role이면 운영 콘솔 진입을 허용합니다.
   /// Parameters:
   /// - [name]: LoginPage에서 입력한 관리자 아이디입니다.
   /// - [password]: LoginPage에서 입력한 비밀번호이며 상태에 저장하지 않습니다.
   /// Returns:
-  /// - [result]: 로그인과 ADMIN 권한 확인이 모두 성공했는지 여부입니다.
+  /// - [result]: 로그인과 콘솔 접근 권한 확인이 모두 성공했는지 여부입니다.
   Future<bool> login({required String name, required String password}) async {
     final validationError = _validateLogin(name: name, password: password);
     if (validationError != null) {
@@ -174,12 +174,11 @@ class AuthController extends StateNotifier<AuthState> {
     );
     try {
       final user = await _service.login(name: name.trim(), password: password);
-      if (!user.isAdmin) {
-        await _logoutQuietly();
+      if (!user.canUseAdminConsole) {
         state = state.copyWith(
           clearUser: true,
           isSubmitting: false,
-          errorMessage: '관리자 권한이 필요합니다.',
+          errorMessage: '운영 콘솔 접근 권한이 없습니다.',
         );
         return false;
       }
@@ -196,7 +195,7 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   /// 신규 계정 생성을 요청하고 성공 안내 메시지를 상태에 반영합니다.
-  /// 서버 정책상 신규 사용자는 USER로 생성되므로 Controller는 ADMIN 승격을 수행하지 않습니다.
+  /// 서버 정책상 신규 사용자는 USER로 생성되며 Controller는 ADMIN 승격을 수행하지 않습니다.
   /// Parameters:
   /// - [name]: SignupPage에서 입력한 아이디입니다.
   /// - [password]: SignupPage에서 입력한 비밀번호이며 상태에 보관하지 않습니다.
@@ -228,7 +227,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(
         clearUser: true,
         isSubmitting: false,
-        successMessage: '회원가입이 완료되었습니다. 최고 관리자 승인 후 관리자 기능을 사용할 수 있습니다.',
+        successMessage: '회원가입이 완료되었습니다. 로그인 후 운영 콘솔을 사용할 수 있습니다.',
       );
       return true;
     } catch (error) {
@@ -263,18 +262,6 @@ class AuthController extends StateNotifier<AuthState> {
   /// - [void]: 상태 변경이나 부수 효과만 수행하고 값을 반환하지 않습니다.
   void clearMessages() {
     state = state.copyWith(clearError: true, clearSuccess: true);
-  }
-
-  /// 권한 없는 사용자의 세션을 사용자 흐름을 방해하지 않고 종료합니다.
-  /// 로그인 성공 후 ADMIN role 검증 실패 시 내부 정리용으로만 사용됩니다.
-  /// Parameters:
-  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
-  /// Returns:
-  /// - [completion]: 비동기 작업 완료를 의미하며 값은 반환하지 않습니다.
-  Future<void> _logoutQuietly() async {
-    try {
-      await _service.logout();
-    } catch (_) {}
   }
 
   /// 로그인 입력값의 최소 조건을 검증합니다.

@@ -8,7 +8,9 @@ import 'admin_payload_mapper.dart';
 import 'admin_service.dart';
 import 'mock_admin_service.dart';
 import 'openapi_admin_service.dart';
+import 'question_image_picker_service.dart';
 import 'question_image_upload_service.dart';
+import 's3_question_image_upload_service.dart';
 
 /// 관리자 service 구현과 gateway/mapper 의존성을 구성하는 factory입니다.
 /// Riverpod provider가 mock과 OpenAPI 구현을 교체할 때 이 클래스를 통해 wiring을 한 곳에 둡니다.
@@ -55,7 +57,7 @@ class AdminServiceProvider {
   final String apiBaseUrl;
 
   /// vote 생성 endpoint 경로 설정입니다.
-  /// 서버의 ADMIN 보호 create endpoint 확정 전후 차이를 gateway 구성에서 흡수합니다.
+  /// 서버의 로그인 사용자 보호 create endpoint 확정 전후 차이를 gateway 구성에서 흡수합니다.
   final String voteCreatePath;
 
   /// 외부에서 주입한 gateway 구현입니다.
@@ -124,14 +126,39 @@ final adminUrlBuilderProvider = Provider<AdminUrlBuilder>((ref) {
 });
 
 /// question 이미지 업로드 service를 제공하는 Riverpod provider입니다.
-/// mock mode에서는 deterministic upload 결과를, real mode에서는 미연결 상태를 명확히 반환합니다.
-/// 실제 S3/presigned 구현은 이 provider 뒤에 추가되어 Controller 변경을 막습니다.
+/// mock mode에서는 deterministic upload 결과를, real mode에서는 Cognito/S3 직접 업로드 구현을 반환합니다.
+/// S3 설정이 누락되면 명확한 실패 service로 운영자에게 설정 문제를 알려줍니다.
 final questionImageUploadServiceProvider = Provider<QuestionImageUploadService>(
   (ref) {
     const useMockService = bool.fromEnvironment('TAGLOW_USE_MOCK_SERVICE');
     if (useMockService) {
       return const MockQuestionImageUploadService();
     }
-    return const UnavailableQuestionImageUploadService();
+    final env = ref.watch(envConfigProvider);
+    if (!env.hasS3UploadConfig) {
+      return UnavailableQuestionImageUploadService(
+        'S3 이미지 업로드 설정이 누락되었습니다: '
+        '${env.missingS3UploadConfigKeys.join(', ')}',
+      );
+    }
+    return S3QuestionImageUploadService(
+      identityPoolId: env.cognitoIdentityPoolId,
+      bucket: env.s3Bucket,
+      region: env.s3Region,
+      publicBaseUrl: env.s3PublicBaseUrl,
+      questionImagePrefix: env.s3QuestionImagePrefix,
+    );
+  },
+);
+
+/// question 이미지 선택 service를 제공하는 Riverpod provider입니다.
+/// mock mode에서는 파일 선택 창 없이 fixture를, real mode에서는 image_picker 구현을 사용합니다.
+final questionImagePickerServiceProvider = Provider<QuestionImagePickerService>(
+  (ref) {
+    const useMockService = bool.fromEnvironment('TAGLOW_USE_MOCK_SERVICE');
+    if (useMockService) {
+      return const MockQuestionImagePickerService();
+    }
+    return ImagePickerQuestionImagePickerService();
   },
 );

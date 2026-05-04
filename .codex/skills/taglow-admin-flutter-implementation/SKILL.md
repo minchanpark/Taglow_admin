@@ -34,7 +34,7 @@ description: Build, refactor, or review Taglow admin Flutter Web features. Use w
 
 ## Feature Checklist
 
-- ADMIN login blocks non-admin users.
+- USER and ADMIN login can enter the operations console; ADMIN is only the highest-privilege role distinction.
 - Vote list/detail supports create, update, end, delete, loading, empty, error, and retry.
 - Question editor distinguishes image upload failure from API save failure.
 - Server receives `imageUrl` and `imageRatio`, not bytes.

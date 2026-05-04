@@ -28,11 +28,12 @@ abstract class AdminApiGateway {
 
   /// 현재 인증 사용자를 조회합니다.
   /// 세션 방식이 바뀌어도 Controller는 [AdminService] 계약만 사용합니다.
+  /// 인증되지 않은 401/403 응답은 예외가 아니라 null session으로 정규화합니다.
   /// Parameters:
   /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
   /// Returns:
-  /// - [result]: Gateway가 정규화한 현재 사용자 payload입니다.
-  Future<Map<String, Object?>> me();
+  /// - [result]: Gateway가 정규화한 현재 사용자 payload이거나 비로그인 상태의 null입니다.
+  Future<Map<String, Object?>?> me();
 
   /// 현재 인증 세션을 종료합니다.
   /// body 없는 성공 응답도 Gateway 구현에서 허용합니다.
@@ -172,8 +173,12 @@ class DioAdminApiGateway implements AdminApiGateway {
   static const defaultBaseUrl = 'https://vote.newdawnsoi.site';
 
   /// vote 생성 API의 기본 경로입니다.
-  /// ADMIN 보호 endpoint가 확정되면 설정값만 교체하도록 분리되어 있습니다.
+  /// 로그인 사용자 보호 endpoint가 확정되면 설정값만 교체하도록 분리되어 있습니다.
   static const defaultVoteCreatePath = '/api/public/votes';
+
+  static const _suppressExpectedAuthFailureLog =
+      'suppressExpectedAuthFailureLog';
+  static const _withCredentialsExtra = 'withCredentials';
 
   /// 실제 HTTP 요청을 수행하는 Dio client입니다.
   /// browser credential과 Gateway interceptor 설정을 포함합니다.
@@ -203,19 +208,39 @@ class DioAdminApiGateway implements AdminApiGateway {
   /// - [result]: 인증 사용자 payload입니다.
   @override
   Future<Map<String, Object?>> login(Map<String, Object?> payload) async {
-    final response = await _dio.post<Object?>('/api/auth/login', data: payload);
-    return _asPayload(response.data, 'auth user');
+    try {
+      final response = await _dio.post<Object?>(
+        '/api/auth/login',
+        data: payload,
+      );
+      return _asPayload(response.data, 'auth user');
+    } on DioException catch (error, stackTrace) {
+      _throwLoginException(error, stackTrace);
+    }
   }
 
   /// 현재 인증 사용자 payload를 조회합니다.
   /// 세션 cookie 전송 여부는 Dio adapter 설정을 따릅니다.
+  /// 비로그인 상태의 401/403은 앱 시작 흐름에서 정상적인 null session으로 처리합니다.
   /// Parameters:
   /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
   /// Returns:
-  /// - [result]: 현재 사용자 payload입니다.
+  /// - [result]: 현재 사용자 payload이거나 비로그인 상태의 null입니다.
   @override
-  Future<Map<String, Object?>> me() async {
-    final response = await _dio.get<Object?>('/api/auth/me');
+  Future<Map<String, Object?>?> me() async {
+    final response = await _dio.get<Object?>(
+      '/api/auth/me',
+      options: Options(
+        extra: const <String, dynamic>{_suppressExpectedAuthFailureLog: true},
+        validateStatus: (status) {
+          return status != null &&
+              (status < 400 || status == 401 || status == 403);
+        },
+      ),
+    );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    }
     return _asPayload(response.data, 'current auth user');
   }
 
@@ -250,7 +275,11 @@ class DioAdminApiGateway implements AdminApiGateway {
   /// - [result]: 생성된 vote payload입니다.
   @override
   Future<Map<String, Object?>> createVote(Map<String, Object?> payload) async {
-    final response = await _dio.post<Object?>(_voteCreatePath, data: payload);
+    final response = await _dio.post<Object?>(
+      _voteCreatePath,
+      data: payload,
+      options: _voteCreateOptions(),
+    );
     return _asPayload(response.data, 'created vote');
   }
 
@@ -433,6 +462,21 @@ class DioAdminApiGateway implements AdminApiGateway {
   /// - [result]: URL encode된 path segment입니다.
   String _path(String id) => Uri.encodeComponent(id);
 
+  /// vote 생성 요청에 사용할 per-request option을 계산합니다.
+  /// 현재 임시 public 생성 endpoint는 credentialed CORS 응답을 내려주지 않으므로 cookie 전송을 끕니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [result]: public 임시 endpoint 전용 credential override 또는 기본 null입니다.
+  Options? _voteCreateOptions() {
+    if (_voteCreatePath != defaultVoteCreatePath) {
+      return null;
+    }
+    return Options(
+      extra: const <String, dynamic>{_withCredentialsExtra: false},
+    );
+  }
+
   /// 응답 data를 object payload map으로 정규화합니다.
   /// 예상 구조가 아니면 Mapper에 잘못된 형태가 전달되지 않도록 format 오류를 냅니다.
   /// Parameters:
@@ -468,6 +512,56 @@ class DioAdminApiGateway implements AdminApiGateway {
     }
     throw FormatException('Expected $fieldName to be a list');
   }
+
+  /// 로그인 실패 응답을 화면에 보여줄 수 있는 안전한 오류로 바꿉니다.
+  /// 비밀번호나 서버 payload는 포함하지 않고 인증 실패 원인만 일반화합니다.
+  /// Parameters:
+  /// - [error]: Dio에서 받은 로그인 실패 예외입니다.
+  /// - [stackTrace]: 원래 실패 지점의 stack trace입니다.
+  /// Returns:
+  /// - [never]: 항상 [AdminApiException]을 던집니다.
+  Never _throwLoginException(DioException error, StackTrace stackTrace) {
+    final statusCode = error.response?.statusCode;
+    final message = switch (statusCode) {
+      401 || 403 => '아이디 또는 비밀번호를 확인해주세요.',
+      null => '관리자 배포 origin 또는 서버 CORS 설정을 확인해주세요.',
+      >= 500 => '서버 오류입니다. 잠시 후 다시 시도해주세요.',
+      _ => '로그인에 실패했습니다.',
+    };
+    Error.throwWithStackTrace(
+      AdminApiException(message, statusCode: statusCode),
+      stackTrace,
+    );
+  }
+}
+
+/// 관리자 API 실패를 View에 노출 가능한 메시지로 정규화한 예외입니다.
+/// 민감한 request/response payload는 보관하지 않고 status와 안전한 문구만 전달합니다.
+/// fields:
+/// - [message]: 사용자에게 표시할 수 있는 오류 메시지입니다.
+/// - [statusCode]: 서버가 응답한 HTTP status이며 네트워크 실패면 null입니다.
+class AdminApiException implements Exception {
+  /// API 예외 값을 생성합니다.
+  /// Parameters:
+  /// - [message]: 안전하게 표시할 오류 메시지입니다.
+  /// - [statusCode]: 선택적 HTTP status code입니다.
+  /// Returns:
+  /// - [instance]: 관리자 API 예외 인스턴스입니다.
+  const AdminApiException(this.message, {this.statusCode});
+
+  /// 사용자에게 표시할 수 있는 오류 메시지입니다.
+  final String message;
+
+  /// 서버 응답 status code입니다. CORS/네트워크 실패처럼 응답이 없으면 null입니다.
+  final int? statusCode;
+
+  /// Controller의 일반 오류 메시지 정규화에서 안전한 메시지만 사용되게 합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [result]: 사용자 표시용 메시지입니다.
+  @override
+  String toString() => message;
 }
 
 /// body가 있는 JSON 요청에만 content-type을 추가하는 Dio interceptor입니다.
@@ -557,12 +651,29 @@ class _AdminApiDebugLogInterceptor extends Interceptor {
     if (!kDebugMode) {
       return;
     }
+    if (_isExpectedAuthFailure(response)) {
+      return;
+    }
 
     final options = response.requestOptions;
     debugPrint(
       '[Taglow Admin API] RESPONSE ${options.method} ${options.uri} '
       'status=${response.statusCode} data=${_debugData(options, response.data)}',
     );
+  }
+
+  /// 비로그인 상태에서 앱 시작 세션 확인이 반환하는 401/403 로그인지 확인합니다.
+  /// 이 실패는 Controller가 null session으로 처리하므로 debug error noise에서 제외합니다.
+  /// Parameters:
+  /// - [response]: Dio 응답입니다.
+  /// Returns:
+  /// - [result]: 예상된 세션 확인 실패 여부입니다.
+  bool _isExpectedAuthFailure(Response<dynamic> response) {
+    final statusCode = response.statusCode;
+    return response.requestOptions.extra[DioAdminApiGateway
+                ._suppressExpectedAuthFailureLog] ==
+            true &&
+        (statusCode == 401 || statusCode == 403);
   }
 
   /// 실패 응답의 method, URL, status, type, data 요약을 debug 출력합니다.

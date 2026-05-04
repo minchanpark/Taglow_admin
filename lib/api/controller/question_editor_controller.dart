@@ -4,11 +4,12 @@ import '../model/admin_question.dart';
 import '../model/question_image_upload_result.dart';
 import '../service/admin_service.dart';
 import '../service/admin_service_provider.dart';
+import '../service/question_image_picker_service.dart';
 import '../service/question_image_upload_service.dart';
 
 /// vote별 question editor 상태를 제공하는 family provider입니다.
 /// View가 voteId를 넘기면 Controller가 [AdminService]와 [QuestionImageUploadService]를 주입받습니다.
-/// 이미지 업로드와 question 저장 경계를 UI에서 분리합니다.
+/// 이미지 선택, 업로드와 question 저장 경계를 UI에서 분리합니다.
 final questionEditorControllerProvider =
     StateNotifierProvider.family<
       QuestionEditorController,
@@ -18,6 +19,7 @@ final questionEditorControllerProvider =
       return QuestionEditorController(
         voteId: voteId,
         service: ref.watch(adminServiceProvider),
+        imagePicker: ref.watch(questionImagePickerServiceProvider),
         uploadService: ref.watch(questionImageUploadServiceProvider),
       );
     });
@@ -152,6 +154,7 @@ class QuestionEditorState {
 /// fields:
 /// - [_voteId]: 새 question이 속할 vote 식별자입니다.
 /// - [_service]: question 생성 API를 담당하는 관리자 Service 계약입니다.
+/// - [_imagePicker]: 이미지 파일 선택과 디코딩을 담당하는 Service 계약입니다.
 /// - [_uploadService]: 이미지 업로드와 비율 결과를 제공하는 upload Service 계약입니다.
 class QuestionEditorController extends StateNotifier<QuestionEditorState> {
   /// question editor Controller를 생성합니다.
@@ -159,15 +162,18 @@ class QuestionEditorController extends StateNotifier<QuestionEditorState> {
   /// Parameters:
   /// - [voteId]: 새 question을 추가할 vote 식별자입니다.
   /// - [service]: question 저장을 수행하는 관리자 Service입니다.
+  /// - [imagePicker]: 이미지 파일 선택과 디코딩을 수행하는 Service입니다.
   /// - [uploadService]: 이미지 업로드 결과를 만드는 Service입니다.
   /// Returns:
   /// - [instance]: question editor 상태를 관리하는 새 Controller입니다.
   QuestionEditorController({
     required String voteId,
     required AdminService service,
+    required QuestionImagePickerService imagePicker,
     required QuestionImageUploadService uploadService,
   }) : _voteId = voteId,
        _service = service,
+       _imagePicker = imagePicker,
        _uploadService = uploadService,
        super(const QuestionEditorState());
 
@@ -178,6 +184,10 @@ class QuestionEditorController extends StateNotifier<QuestionEditorState> {
   /// question 생성 API를 수행하는 Service 의존성입니다.
   /// Controller가 gateway, mapper, endpoint를 직접 알지 않게 합니다.
   final AdminService _service;
+
+  /// 이미지 파일 선택과 디코딩을 수행하는 Service 의존성입니다.
+  /// image picker와 platform 세부 동작을 Controller 밖에 둡니다.
+  final QuestionImagePickerService _imagePicker;
 
   /// 이미지 업로드를 수행하는 Service 의존성입니다.
   /// S3나 presigned URL 같은 저장소 세부 구현을 Controller 밖에 둡니다.
@@ -204,7 +214,7 @@ class QuestionEditorController extends StateNotifier<QuestionEditorState> {
   }
 
   /// 이미지 업로드 Service를 호출하고 결과를 editor 상태에 저장합니다.
-  /// 현재 구현은 mock 입력을 사용하며 실제 파일 선택/디코딩은 Service 경계 뒤로 확장됩니다.
+  /// 이미지 선택과 디코딩은 picker service, 저장소 업로드는 upload service 경계 뒤에서 처리합니다.
   /// Parameters:
   /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
   /// Returns:
@@ -216,12 +226,17 @@ class QuestionEditorController extends StateNotifier<QuestionEditorState> {
       clearSuccess: true,
     );
     try {
+      final selectedImage = await _imagePicker.pickQuestionImage();
+      if (selectedImage == null) {
+        state = state.copyWith(isUploading: false);
+        return;
+      }
       final result = await _uploadService.uploadQuestionImage(
-        bytes: const <int>[1, 2, 3, 4],
-        fileName: 'mock-question.png',
-        contentType: 'image/png',
-        imageWidth: 900,
-        imageHeight: 1200,
+        bytes: selectedImage.bytes,
+        fileName: selectedImage.fileName,
+        contentType: selectedImage.contentType,
+        imageWidth: selectedImage.imageWidth,
+        imageHeight: selectedImage.imageHeight,
       );
       state = state.copyWith(
         image: result,

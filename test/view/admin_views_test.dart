@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taglow_admin/api/model/admin_user.dart';
 import 'package:taglow_admin/api/service/admin_service_provider.dart';
 import 'package:taglow_admin/api/service/mock_admin_service.dart';
+import 'package:taglow_admin/api/service/question_image_picker_service.dart';
 import 'package:taglow_admin/api/service/question_image_upload_service.dart';
 import 'package:taglow_admin/theme/admin_theme.dart';
 import 'package:taglow_admin/view/auth/login_page.dart';
@@ -23,10 +25,9 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
-  testWidgets('USER login renders an admin permission message', (tester) async {
-    await _pumpAdminPage(
+  testWidgets('USER login is accepted by the auth form', (tester) async {
+    await _pumpAdminRouter(
       tester,
-      const LoginPage(),
       overrides: <Override>[
         adminServiceProvider.overrideWithValue(_UserOnlyAdminService()),
       ],
@@ -44,7 +45,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '로그인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('관리자 권한이 필요합니다.'), findsOneWidget);
+    expect(find.text('관리자 권한이 필요합니다.'), findsNothing);
+    expect(find.text('votes route'), findsOneWidget);
   });
 
   testWidgets('vote list renders vote cards and the create tile', (
@@ -98,6 +100,9 @@ void main() {
         questionImageUploadServiceProvider.overrideWithValue(
           const MockQuestionImageUploadService(),
         ),
+        questionImagePickerServiceProvider.overrideWithValue(
+          const MockQuestionImagePickerService(),
+        ),
       ],
     );
 
@@ -113,7 +118,7 @@ void main() {
     await tester.tap(find.text('이미지를 업로드하려면 탭하세요'));
     await tester.pumpAndSettle();
 
-    expect(find.text('이미지가 준비되었습니다'), findsOneWidget);
+    expect(find.textContaining('이미지가 준비되었습니다'), findsWidgets);
     expect(
       tester
           .widget<FilledButton>(find.widgetWithText(FilledButton, '완료하기'))
@@ -132,6 +137,30 @@ Future<void> _pumpAdminPage(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(theme: AdminTheme.data(), home: child),
+    ),
+  );
+  await tester.pump();
+}
+
+Future<void> _pumpAdminRouter(
+  WidgetTester tester, {
+  List<Override> overrides = const <Override>[],
+}) async {
+  final router = GoRouter(
+    initialLocation: '/login',
+    routes: <RouteBase>[
+      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(
+        path: '/votes',
+        builder: (_, _) => const Scaffold(body: Text('votes route')),
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp.router(theme: AdminTheme.data(), routerConfig: router),
     ),
   );
   await tester.pump();

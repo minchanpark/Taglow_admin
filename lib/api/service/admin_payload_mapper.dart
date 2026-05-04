@@ -212,7 +212,7 @@ class AdminPayloadMapper {
   String _string(Object? value) => value?.toString() ?? '';
 
   /// payload role 값을 문자열 집합으로 정규화합니다.
-  /// Auth Controller가 ADMIN role을 같은 방식으로 판단하도록 보장합니다.
+  /// Auth Controller가 USER/ADMIN role을 같은 방식으로 판단하도록 보장합니다.
   /// Parameters:
   /// - [value]: 서버 payload의 role 목록 값입니다.
   /// Returns:

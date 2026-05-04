@@ -21,7 +21,8 @@ Taglow admin is a Flutter Web operations console for creating and managing votes
 
 ## Product Invariants
 
-- ADMIN users can create, inspect, update, end, and delete votes and questions.
+- Authenticated USER and ADMIN users can create, inspect, update, end, and delete votes and questions.
+- ADMIN is a highest-privilege developer/super-admin role, not the only role allowed into the operations console.
 - Question images are uploaded outside the Spring payload; the server receives only `imageUrl` and `imageRatio`.
 - Participant links use `TAGLOW_PARTICIPANT_BASE_URL/e/{voteId}`.
 - Player links use `TAGLOW_PLAYER_BASE_URL/display/{voteId}` with `https://taglow-player.web.app` as the current player base URL.
