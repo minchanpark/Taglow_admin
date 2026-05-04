@@ -6,19 +6,54 @@ import '../../api/controller/question_editor_controller.dart';
 import '../../theme/admin_theme.dart';
 import '../admin_widgets.dart';
 
+/// 특정 vote에 question을 추가하는 화면입니다.
+/// 입력과 upload/save 상태는 [questionEditorControllerProvider] family provider에서 읽습니다.
+/// fields:
+/// - [voteId]: question을 추가할 vote 식별자입니다.
 class QuestionEditorPage extends ConsumerStatefulWidget {
+  /// question editor 화면 widget을 생성합니다.
+  /// route parameter의 voteId를 Controller family provider에 전달합니다.
+  /// Parameters:
+  /// - [voteId]: question이 속할 vote 식별자입니다.
+  /// - [key]: Flutter widget 식별 key입니다.
+  /// Returns:
+  /// - [instance]: question editor 화면 widget 인스턴스입니다.
   const QuestionEditorPage({required this.voteId, super.key});
 
+  /// question을 추가할 대상 vote 식별자입니다.
+  /// 저장 Controller와 뒤로가기 route에 함께 사용됩니다.
   final String voteId;
 
+  /// question editor 화면 state를 생성합니다.
+  /// TextEditingController lifecycle과 Controller submit 결과 처리를 state에서 관리합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [result]: question editor 화면 state 객체입니다.
   @override
   ConsumerState<QuestionEditorPage> createState() => _QuestionEditorPageState();
 }
 
+/// question form 입력, upload button, save action UI를 관리하는 state입니다.
+/// 이미지 선택/업로드와 question 저장은 Controller에 위임하고 View는 상태만 렌더링합니다.
+/// fields:
+/// - [_titleController]: question 제목 입력 상태입니다.
+/// - [_detailController]: question 설명 입력 상태입니다.
 class _QuestionEditorPageState extends ConsumerState<QuestionEditorPage> {
+  /// question 제목 입력을 보관하는 TextEditingController입니다.
+  /// 입력 변경 시 [QuestionEditorController.updateTitle]과 동기화됩니다.
   final _titleController = TextEditingController();
+
+  /// question 설명 입력을 보관하는 TextEditingController입니다.
+  /// 선택 입력값을 [QuestionEditorController.updateDetail]로 전달합니다.
   final _detailController = TextEditingController();
 
+  /// form 입력 controller 자원을 해제합니다.
+  /// 업로드 결과와 저장 상태는 Riverpod Controller lifecycle이 관리합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [void]: 상태 변경이나 부수 효과만 수행하고 값을 반환하지 않습니다.
   @override
   void dispose() {
     _titleController.dispose();
@@ -26,6 +61,12 @@ class _QuestionEditorPageState extends ConsumerState<QuestionEditorPage> {
     super.dispose();
   }
 
+  /// question editor 화면 UI를 빌드합니다.
+  /// upload/save action은 Controller method를 호출하고 성공 결과에 따라 입력 초기화나 route 이동을 처리합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: question editor 화면 widget tree입니다.
   @override
   Widget build(BuildContext context) {
     final provider = questionEditorControllerProvider(widget.voteId);
@@ -156,17 +197,45 @@ class _QuestionEditorPageState extends ConsumerState<QuestionEditorPage> {
   }
 }
 
+/// question poster image upload action을 표시하는 private widget입니다.
+/// View는 업로드 상태와 prepared 상태만 넘기고 실제 upload는 Controller callback으로 수행합니다.
+/// fields:
+/// - [hasImage]: 업로드 결과가 준비되었는지 나타냅니다.
+/// - [isUploading]: 업로드 진행 중인지 나타냅니다.
+/// - [onTap]: 업로드 시작 action callback입니다.
 class _PosterUploadButton extends StatelessWidget {
+  /// poster upload button widget을 생성합니다.
+  /// Controller state에 따라 check icon, upload icon, loading indicator를 전환합니다.
+  /// Parameters:
+  /// - [hasImage]: 이미지 준비 여부입니다.
+  /// - [isUploading]: 업로드 진행 여부입니다.
+  /// - [onTap]: tap callback입니다.
+  /// Returns:
+  /// - [instance]: poster upload button widget 인스턴스입니다.
   const _PosterUploadButton({
     required this.hasImage,
     required this.isUploading,
     required this.onTap,
   });
 
+  /// 이미지 업로드 결과가 준비되었는지 나타냅니다.
+  /// true이면 check icon과 완료 메시지를 표시합니다.
   final bool hasImage;
+
+  /// 이미지 업로드가 진행 중인지 나타냅니다.
+  /// true이면 tap을 막고 loading indicator를 표시합니다.
   final bool isUploading;
+
+  /// upload button tap callback입니다.
+  /// [QuestionEditorController.uploadImage]와 연결됩니다.
   final VoidCallback onTap;
 
+  /// poster upload 영역을 빌드합니다.
+  /// 업로드 진행, 완료, 대기 상태를 한 영역 안에서 전환합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: poster upload widget tree입니다.
   @override
   Widget build(BuildContext context) {
     return Column(

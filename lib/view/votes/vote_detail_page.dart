@@ -7,16 +7,45 @@ import '../../api/model/admin_question.dart';
 import '../../theme/admin_theme.dart';
 import '../admin_widgets.dart';
 
+/// 단일 vote의 question 목록과 운영 링크를 보여주는 상세 화면입니다.
+/// [VoteDetailController]가 vote/question/API 조회와 URL builder 결과를 상태로 제공합니다.
+/// fields:
+/// - [voteId]: 상세로 표시할 vote 식별자입니다.
 class VoteDetailPage extends ConsumerStatefulWidget {
+  /// vote 상세 화면 widget을 생성합니다.
+  /// route parameter의 voteId를 Controller family provider에 전달합니다.
+  /// Parameters:
+  /// - [voteId]: 상세 대상 vote 식별자입니다.
+  /// - [key]: Flutter widget 식별 key입니다.
+  /// Returns:
+  /// - [instance]: vote 상세 화면 widget 인스턴스입니다.
   const VoteDetailPage({required this.voteId, super.key});
 
+  /// 상세로 표시할 vote 식별자입니다.
+  /// 데이터 조회, 새 question route, 운영 링크 생성 기준으로 쓰입니다.
   final String voteId;
 
+  /// vote 상세 화면 state를 생성합니다.
+  /// 초기 load와 refresh action을 state에서 Controller로 연결합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [result]: vote 상세 화면 state 객체입니다.
   @override
   ConsumerState<VoteDetailPage> createState() => _VoteDetailPageState();
 }
 
+/// vote 상세 화면의 lifecycle과 렌더링을 관리하는 state입니다.
+/// View는 Controller 상태를 읽고 question grid와 participant/player link panel을 표시합니다.
+/// fields:
+/// - [none]: 저장 필드가 없으며, 연결 관계는 생성/호출 위치에서 결정됩니다.
 class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
+  /// 화면 진입 시 vote 상세 데이터를 비동기로 로드합니다.
+  /// microtask로 provider notifier 호출을 예약해 build 전 lifecycle을 안전하게 유지합니다.
+  /// Parameters:
+  /// - [none]: 이 동작은 외부 입력 없이 현재 객체나 주입된 의존성을 사용합니다.
+  /// Returns:
+  /// - [void]: 상태 변경이나 부수 효과만 수행하고 값을 반환하지 않습니다.
   @override
   void initState() {
     super.initState();
@@ -26,6 +55,12 @@ class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
     );
   }
 
+  /// vote 상세 화면 UI를 빌드합니다.
+  /// 로딩, 오류, question grid, participant/player link panel을 Controller 상태에 맞춰 렌더링합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: vote 상세 화면 widget tree입니다.
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(voteDetailControllerProvider(widget.voteId));
@@ -100,12 +135,35 @@ class _VoteDetailPageState extends ConsumerState<VoteDetailPage> {
   }
 }
 
+/// vote 상세의 question tile grid를 렌더링하는 private widget입니다.
+/// 마지막 tile은 새 question 추가 action으로 고정됩니다.
+/// fields:
+/// - [questions]: grid에 표시할 question 목록입니다.
+/// - [onAdd]: 새 question 추가 tile tap callback입니다.
 class _QuestionGrid extends StatelessWidget {
+  /// question grid widget을 생성합니다.
+  /// View state가 전달한 question 목록과 add callback을 그대로 렌더링합니다.
+  /// Parameters:
+  /// - [questions]: 표시할 question 목록입니다.
+  /// - [onAdd]: 새 question 추가 callback입니다.
+  /// Returns:
+  /// - [instance]: question grid widget 인스턴스입니다.
   const _QuestionGrid({required this.questions, required this.onAdd});
 
+  /// grid에 표시할 question domain model 목록입니다.
+  /// 각 항목은 [_QuestionTile]로 렌더링됩니다.
   final List<AdminQuestion> questions;
+
+  /// 새 question 추가 tile의 tap callback입니다.
+  /// VoteDetailPage가 question editor route 이동을 연결합니다.
   final VoidCallback onAdd;
 
+  /// question tile들과 add tile을 2열 grid로 빌드합니다.
+  /// parent ListView 안에서 동작하도록 shrinkWrap과 non-scroll physics를 사용합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: question grid widget tree입니다.
   @override
   Widget build(BuildContext context) {
     final tiles = <Widget>[
@@ -128,11 +186,29 @@ class _QuestionGrid extends StatelessWidget {
   }
 }
 
+/// 단일 question을 카드 형태로 표시하는 private widget입니다.
+/// 현재 MVP에서는 question 제목과 placeholder 참여 수를 보여줍니다.
+/// fields:
+/// - [question]: 표시할 question domain model입니다.
 class _QuestionTile extends StatelessWidget {
+  /// question tile widget을 생성합니다.
+  /// VoteDetailPage의 grid가 question 목록을 tile로 변환할 때 사용합니다.
+  /// Parameters:
+  /// - [question]: 표시할 question입니다.
+  /// Returns:
+  /// - [instance]: question tile widget 인스턴스입니다.
   const _QuestionTile({required this.question});
 
+  /// 카드에 표시할 question domain model입니다.
+  /// title은 ellipsis 처리되어 compact grid 안에서 안전하게 보입니다.
   final AdminQuestion question;
 
+  /// question 카드 UI를 빌드합니다.
+  /// 질문 수나 참여자 통계가 추가되면 이 View helper가 표시만 담당합니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: question tile widget tree입니다.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -177,12 +253,35 @@ class _QuestionTile extends StatelessWidget {
   }
 }
 
+/// participant/player URL 값을 표시하는 private link panel입니다.
+/// URL 생성은 Controller/utility가 담당하고 이 widget은 selectable text만 제공합니다.
+/// fields:
+/// - [label]: 링크 종류를 표시하는 label입니다.
+/// - [value]: 운영자가 확인하거나 복사할 URL 값입니다.
 class _LinkPanel extends StatelessWidget {
+  /// link panel widget을 생성합니다.
+  /// VoteDetailPage가 participant URL과 player URL 각각에 사용합니다.
+  /// Parameters:
+  /// - [label]: panel label입니다.
+  /// - [value]: 표시할 URL 값입니다.
+  /// Returns:
+  /// - [instance]: link panel widget 인스턴스입니다.
   const _LinkPanel({required this.label, required this.value});
 
+  /// link panel 상단에 표시할 label입니다.
+  /// participant/player 종류를 운영자가 빠르게 구분하게 합니다.
   final String label;
+
+  /// 표시할 URL 문자열입니다.
+  /// participant QR payload나 player URL은 Controller state의 링크 model에서 옵니다.
   final String value;
 
+  /// label과 selectable URL text를 가진 panel을 빌드합니다.
+  /// 복사 service가 연결되기 전에도 운영자가 URL을 직접 선택할 수 있습니다.
+  /// Parameters:
+  /// - [context]: Flutter build context입니다.
+  /// Returns:
+  /// - [result]: link panel widget tree입니다.
   @override
   Widget build(BuildContext context) {
     return Container(

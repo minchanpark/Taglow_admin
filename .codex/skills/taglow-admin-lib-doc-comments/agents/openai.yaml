@@ -1,0 +1,6 @@
+interface:
+  display_name: "Taglow Admin Lib Doc Comments"
+  short_description: "Run Korean Dart doc shards"
+  default_prompt: "Use $taglow-admin-lib-doc-comments with subagents and immediately run its inventory script before adding Korean connected doc comments across lib Dart code."
+policy:
+  allow_implicit_invocation: true
