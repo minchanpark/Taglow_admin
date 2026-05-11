@@ -511,7 +511,7 @@ MVP 정책:
 
 ```sh
 --dart-define=TAGLOW_API_BASE_URL=https://vote.newdawnsoi.site
---dart-define=TAGLOW_PARTICIPANT_BASE_URL=https://taglow-acca6.web.app
+--dart-define=TAGLOW_PARTICIPANT_BASE_URL=https://taglow-participant.web.app
 --dart-define=TAGLOW_PLAYER_BASE_URL=https://taglow-player.web.app
 ```
 
@@ -524,7 +524,7 @@ MVP 정책:
 예시:
 
 ```text
-https://taglow-acca6.web.app/e/venturous-2026
+https://taglow-participant.web.app/e/venturous-2026
 ```
 
 ### 7-3. 참여자 QR payload
@@ -1096,7 +1096,7 @@ Flutter API 임시 정책:
 ### 12-6. CORS 확인 결과
 
 Runtime preflight 확인:
-- `Origin: https://taglow-acca6.web.app` + public display GET preflight는 `200`이며 `Access-Control-Allow-Origin`이 반환된다.
+- `Origin: https://taglow-participant.web.app` + public display GET preflight는 `200`이며 `Access-Control-Allow-Origin`이 반환된다.
 - `Origin: http://localhost:5000`도 허용된다.
 - `Origin: https://taglow-player.web.app`는 `403 Invalid CORS request`다.
 
@@ -1525,7 +1525,7 @@ additionalProperties:
 | Auth | session/cookie + CORS + CSRF 정책 확정 필요 |
 | CORS | `https://taglow-player.web.app` origin allowlist 추가 필요 |
 | Storage | S3 직접 업로드 또는 presigned URL 방식 확정 필요 |
-| Frontend env | `TAGLOW_PARTICIPANT_BASE_URL=https://taglow-acca6.web.app` 필요 |
+| Frontend env | `TAGLOW_PARTICIPANT_BASE_URL=https://taglow-participant.web.app` 필요 |
 | Frontend env | `TAGLOW_PLAYER_BASE_URL=https://taglow-player.web.app` 필요 |
 | Player | `/display/{voteId}` route 구현 필요 |
 | QR | preview와 download 구현 필요 |

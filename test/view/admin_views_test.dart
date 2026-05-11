@@ -120,7 +120,7 @@ void main() {
     await tester.tap(find.text('링크 복사'));
     await tester.pumpAndSettle();
 
-    expect(clipboard.copiedText, 'https://taglow-acca6.web.app/e/1');
+    expect(clipboard.copiedText, 'https://taglow-participant.web.app/e/1');
     expect(find.text('참여자 링크를 복사했습니다.'), findsOneWidget);
   });
 

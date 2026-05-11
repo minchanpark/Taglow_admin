@@ -12,6 +12,16 @@ description: Synchronize Taglow admin Flutter services with the Spring backend A
 3. Read the API, auth, upload, URL, and OpenAPI sections in `dev/Taglow_admin_TDD.md`.
 4. Preserve existing user changes before refreshing or regenerating anything.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For broad API sync work that spans OpenAPI contracts, gateway/mapper code, mock parity, and tests:
+
+1. Keep the main agent responsible for contract decisions, generated-code boundaries, final integration, and verification.
+2. Use explorer subagents for read-only work such as comparing OpenAPI schema, runtime samples, PRD/TDD requirements, and boundary-search results.
+3. Use worker subagents only after the desired contract shape is clear and write scopes are disjoint, such as gateway/mapper updates separate from service/mock tests.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must never hand-edit `lib/api/generated/**`.
+5. Require each subagent to report changed paths, contract assumptions, tests run, and any backend or schema blocker.
+
 ## Contract Direction
 
 - Keep `AdminService` as the stable controller-facing contract.

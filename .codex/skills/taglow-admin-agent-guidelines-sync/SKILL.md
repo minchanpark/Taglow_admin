@@ -12,6 +12,16 @@ description: Maintain Taglow admin AGENTS.md files and project-local Codex skill
 3. Put detailed responsibility and forbidden-dependency rules in the closest child `AGENTS.md`.
 4. Put Codex-specific repeatable workflows in `.codex/skills/taglow-admin-*`.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For repo-wide instruction sync that touches PRD/TDD, multiple `AGENTS.md` files, and several project-local skills:
+
+1. Keep the main agent responsible for source-of-truth decisions, final wording, conflict cleanup, and validation.
+2. Use explorer subagents for read-only comparisons: PRD/TDD invariants, `lib`/`test` AGENTS coverage, and `.codex/skills` drift.
+3. Use worker subagents only when write scopes are disjoint, such as one worker for child `AGENTS.md` files and another for project-local skills.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must adapt to concurrent changes.
+5. Require each subagent to report checked scope, changed paths, contradictions found or resolved, and unresolved questions.
+
 ## Update Workflow
 
 1. Identify what changed: product scope, architecture, directory structure, API contract, auth/security, upload, QR/player, testing, debugging, or tooling.

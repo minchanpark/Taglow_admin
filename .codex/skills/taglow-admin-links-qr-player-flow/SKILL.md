@@ -11,6 +11,16 @@ description: Implement, test, or review Taglow admin operation links, participan
 2. Read PRD/TDD URL, QR, player, vote detail, and diagnostics sections.
 3. Keep link/QR/player behavior separate from server CRUD implementation.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For full operation-link, QR, and player work that spans utilities, models, services, controllers, views, diagnostics, and tests:
+
+1. Keep the main agent responsible for URL/QR/player policy, security invariants, final integration, and end-to-end verification.
+2. Use explorer subagents for read-only checks of existing URL builders, QR/export wrappers, player route assumptions, diagnostics, and tests.
+3. Use worker subagents only with disjoint write scopes, such as `lib/utils`/models, QR/external-link services, vote-detail controller/view code, and tests.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must keep QR payloads limited to the participant URL.
+5. Require each worker to report changed paths, fallback behavior covered, tests run, and any player route or base URL uncertainty.
+
 ## URL Rules
 
 - Participant URL: `{TAGLOW_PARTICIPANT_BASE_URL}/e/{voteId}`.

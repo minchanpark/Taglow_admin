@@ -11,6 +11,16 @@ description: Audit or debug Taglow admin Flutter Web performance. Use for slow v
 2. Measure before optimizing when possible.
 3. Keep correctness, security, and operator feedback intact.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For broad performance audits that span several independent surfaces:
+
+1. Keep the main agent responsible for the measurement plan, baseline summary, optimization decisions, final integration, and before/after comparison.
+2. Use explorer subagents for read-only evidence slices such as initial load, vote list/detail rendering, image upload memory, QR export cost, Riverpod rebuilds, and bundle/web diagnostics.
+3. Use worker subagents for performance patches only after evidence identifies independent owner areas and write scopes are disjoint.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must not remove loading/error/retry or weaken URL, QR, auth, or upload correctness.
+5. Require each subagent to report measurements, changed paths if any, commands/tools used, and remaining performance risks.
+
 ## Audit Areas
 
 - Initial load: login page, route guard, vote list fetch.

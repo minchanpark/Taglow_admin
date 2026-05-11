@@ -11,6 +11,16 @@ description: Design, add, run, or triage Taglow admin Flutter tests. Use for uni
 2. Choose the narrowest test that protects the behavior being changed.
 3. Prefer fake services and adapters over real backend, S3, clipboard, downloads, or browser launch.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For broad test work that covers multiple layers or a full MVP flow:
+
+1. Keep the main agent responsible for test strategy, shared fixtures/fakes, final suite runs, and failure triage.
+2. Use explorer subagents for read-only inventory of current coverage, skipped scenarios, and existing failing tests.
+3. Use worker subagents only with disjoint write scopes, such as unit/service tests, controller tests, widget tests, and integration-oriented checks.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must not weaken auth, upload, QR, player, generated-code boundary, or security coverage.
+5. Require each worker to report changed paths, scenarios covered, commands run, and remaining failures.
+
 ## Test Strategy
 
 - Unit tests: domain models, validators, `AdminUrlBuilder`, `ImageRatioReader`, mapper aliases, upload result values.

@@ -31,7 +31,7 @@ class EnvConfig {
     ),
     this.participantBaseUrl = const String.fromEnvironment(
       'TAGLOW_PARTICIPANT_BASE_URL',
-      defaultValue: 'https://taglow-acca6.web.app',
+      defaultValue: 'https://taglow-participant.web.app',
     ),
     this.playerBaseUrl = const String.fromEnvironment(
       'TAGLOW_PLAYER_BASE_URL',

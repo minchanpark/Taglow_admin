@@ -13,6 +13,16 @@ description: Analyze Taglow admin implementation stage against PRD, TDD, AGENTS.
 4. Treat PRD/TDD/AGENTS/skills as source of truth and code/tests as evidence.
 5. Default to read-only analysis unless the user asks to update docs or instructions.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For repo-wide stage audits or MVP readiness reviews:
+
+1. Keep the main agent responsible for the requirement matrix, final verdict, confidence level, risk ranking, and any documentation-sync edits.
+2. Use explorer subagents for read-only slices such as product-flow evidence, architecture-boundary evidence, test/analyze evidence, and docs/skills drift.
+3. Use worker subagents only in audit + documentation sync mode and only with disjoint write scopes such as PRD/TDD, child `AGENTS.md`, or project-local skills.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must keep claims evidence-backed.
+5. Require each subagent to report checked files, evidence found, missing requirements, commands run, and unresolved blockers.
+
 ## Modes
 
 - **Audit only**: analyze implementation stage, risks, and next work without edits.

@@ -115,7 +115,7 @@
 4. USER 또는 ADMIN 사용자가 question 이미지를 S3에 직접 업로드할 수 있다.
 5. question 저장 시 서버에는 이미지 bytes가 아니라 `imageUrl`과 `imageRatio`만 전달한다.
 6. 저장된 vote/question은 참여자 공개 API와 스탠바이미 display API에서 읽혀야 한다.
-7. 관리자 화면에서 참여자 URL `https://taglow-acca6.web.app/e/{voteId}`를 생성하고 복사할 수 있다.
+7. 관리자 화면에서 참여자 URL `https://taglow-participant.web.app/e/{voteId}`를 생성하고 복사할 수 있다.
 8. 관리자 화면에서 참여자 URL을 payload로 하는 QR 코드를 생성하고 다운로드할 수 있다.
 9. 관리자 화면에서 스탠바이미 player URL `https://taglow-player.web.app/display/{voteId}`를 생성하고 복사할 수 있다.
 10. 관리자 화면에서 player URL을 새 창으로 열어 실제 스탠바이미 화면을 확인할 수 있다.
@@ -519,7 +519,7 @@ vote 기반 운영 링크 묶음.
 예시:
 
 ```text
-https://taglow-acca6.web.app/e/venturous-2026
+https://taglow-participant.web.app/e/venturous-2026
 ```
 
 ### 8-2. QR 코드
@@ -674,7 +674,7 @@ MVP에서는 별도 event 도메인을 만들지 않고 `vote`를 display event 
 | CORS | 관리자 배포 origin과 `https://taglow-player.web.app`을 allowlist에 포함해야 함 |
 | CSRF | cookie 인증을 쓸 경우 state-changing request의 CSRF 정책 확정 필요 |
 | S3 업로드 | Cognito 직접 업로드 또는 서버 presigned URL 방식 중 하나 확정 필요 |
-| 참여자 base URL | `TAGLOW_PARTICIPANT_BASE_URL=https://taglow-acca6.web.app` 기준 |
+| 참여자 base URL | `TAGLOW_PARTICIPANT_BASE_URL=https://taglow-participant.web.app` 기준 |
 | player base URL | `TAGLOW_PLAYER_BASE_URL=https://taglow-player.web.app` 기준 |
 | player route | `/display/{voteId}` route가 player 프로젝트에 구현되어야 함 |
 

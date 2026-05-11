@@ -12,6 +12,17 @@ description: Build, refactor, or review Taglow admin Flutter Web features. Use w
 3. Read only the relevant PRD/TDD sections in `dev/Taglow_admin_PRD.md` and `dev/Taglow_admin_TDD.md`.
 4. Preserve the MVP scope: admin operations console, vote/question management, question image upload, participant link/QR, and player link checks.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For large features touching multiple independent layers or screens:
+
+1. Keep the main agent responsible for architecture choices, shared domain shape, provider wiring, final integration, formatter/analyzer/test runs, and conflict cleanup.
+2. Do not delegate a blocking model or contract decision when the next implementation step depends on it.
+3. Use explorer subagents for read-only layer reconnaissance when ownership is unclear.
+4. Use worker subagents only with disjoint write scopes, such as `lib/api/model` plus tests, `lib/api/service` plus mapper tests, `lib/api/controller` plus controller tests, and one view subtree at a time.
+5. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must keep generated clients, Dio, S3, and browser APIs out of View/Controller.
+6. Require each worker to report changed paths, assumptions, formatter/analyzer/tests run, and unresolved integration risks.
+
 ## Architecture Rules
 
 - Follow `View -> Controller -> Service -> Gateway/Mapper -> Generated Client/Dio -> Server`.

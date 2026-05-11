@@ -9,6 +9,16 @@ description: Diagnose and repair Taglow admin Flutter runtime, route, layout, st
 
 Do not guess from code alone. Reproduce, collect evidence, identify the owning layer, patch narrowly, and verify the same reproduction.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For broad bugs that span multiple independent failure types or evidence sources:
+
+1. Keep the main agent responsible for the canonical reproduction, root-cause decision, patch ownership, and final verification.
+2. Use explorer subagents for read-only evidence collection such as logs, screenshots, network summaries, provider state traces, or focused failing-test summaries.
+3. Use worker subagents for fixes only after the owning layer is clear and write scopes are disjoint.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must preserve the original reproduction.
+5. Require each subagent to report evidence captured, suspected owner layer, changed paths if any, and verification performed.
+
 ## Debug Loop
 
 1. Classify the failure: UI/layout, controller state, route, API/auth, upload, QR/export, player launch, diagnostics, performance, or web-only.

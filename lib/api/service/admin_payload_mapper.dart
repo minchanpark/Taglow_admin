@@ -17,6 +17,10 @@ class AdminPayloadMapper {
   /// - [instance]: payload 변환을 수행하는 mapper 인스턴스입니다.
   const AdminPayloadMapper();
 
+  /// backend `imageRatio`가 int64에서 double로 전환되기 전까지 사용하는 임시 스케일입니다.
+  /// app 내부 domain model은 실제 width / height double 값을 유지합니다.
+  static const int temporaryImageRatioScale = 10000;
+
   /// 로그인 입력값을 auth gateway payload로 변환합니다.
   /// Controller는 password를 상태에 보관하지 않고 Service가 즉시 이 payload로 넘깁니다.
   /// Parameters:
@@ -138,7 +142,7 @@ class AdminPayloadMapper {
       'title': title,
       'detail': detail,
       'imageUrl': imageUrl,
-      'imageRatio': imageRatio,
+      'imageRatio': _encodeImageRatio(imageRatio),
     };
   }
 
@@ -161,7 +165,7 @@ class AdminPayloadMapper {
       'title': title,
       'detail': detail,
       'imageUrl': imageUrl,
-      'imageRatio': imageRatio,
+      'imageRatio': imageRatio == null ? null : _encodeImageRatio(imageRatio),
     });
   }
 
@@ -185,7 +189,7 @@ class AdminPayloadMapper {
       title: _string(normalized['title']),
       detail: _string(normalized['detail'] ?? normalized['description']),
       imageUrl: _string(normalized['imageUrl']),
-      imageRatio: _double(normalized['imageRatio'], fallback: 1),
+      imageRatio: _decodeImageRatio(normalized['imageRatio'], fallback: 1),
       createdAt: _date(normalized['createdAt']),
       updatedAt: _date(normalized['updatedAt']),
     );
@@ -245,6 +249,30 @@ class AdminPayloadMapper {
   double _double(Object? value, {required double fallback}) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  /// 실제 imageRatio double 값을 backend int64 계약에 맞는 임시 정수로 변환합니다.
+  /// Parameters:
+  /// - [value]: width / height로 계산된 실제 이미지 비율입니다.
+  /// Returns:
+  /// - [result]: 서버 payload에 넣을 scaled integer 비율입니다.
+  int _encodeImageRatio(double value) {
+    return (value * temporaryImageRatioScale).round();
+  }
+
+  /// backend가 임시 정수로 돌려준 imageRatio를 domain double 값으로 복원합니다.
+  /// 아직 double 값을 반환하는 mock/미래 backend와 오래된 작은 정수 값도 허용합니다.
+  /// Parameters:
+  /// - [value]: 서버 payload의 imageRatio 값입니다.
+  /// - [fallback]: 파싱 실패 시 사용할 기본값입니다.
+  /// Returns:
+  /// - [result]: app 내부에서 사용할 실제 이미지 비율입니다.
+  double _decodeImageRatio(Object? value, {required double fallback}) {
+    final parsed = _double(value, fallback: fallback);
+    if (parsed.abs() > 20) {
+      return parsed / temporaryImageRatioScale;
+    }
+    return parsed;
   }
 
   /// 문자열 id를 서버가 받을 수 있는 숫자 또는 문자열 값으로 변환합니다.

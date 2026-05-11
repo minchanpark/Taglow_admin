@@ -11,6 +11,16 @@ description: Review Taglow admin operations UX against the PRD. Use for admin sc
 2. Review the real operator path: login, vote list, vote detail, question editor, upload, operation links, QR download, player open, diagnostics.
 3. Treat field-operation readiness as a product constraint.
 
+## Parallel Subagent Workflow
+
+Use subagents only when the current user request explicitly asks for subagents, parallel agents, or delegated execution. For broad multi-screen operator UX reviews:
+
+1. Keep the main agent responsible for severity ranking, PRD alignment, final findings, and any coordinated fix plan.
+2. Use explorer subagents for read-only screen slices such as auth, vote list/detail, question editor/upload, operation links/QR/player, and diagnostics.
+3. Use worker subagents for UX fixes only when the user asks for implementation and write scopes are disjoint by view subtree.
+4. Tell every worker they are not alone in the codebase, must not revert edits made by others, and must preserve operator-critical loading, error, fallback, and accessibility states.
+5. Require each subagent to report files reviewed or changed, screenshots or commands used when available, severity calls, and unresolved UX risks.
+
 ## Review Checklist
 
 - Operator can create a vote and question without developer help.
